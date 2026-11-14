@@ -53,6 +53,13 @@ test('directory cards are visible on launch and chapters receive the full viewpo
   expect(layout.top).toBe(0);
   expect(layout.height).toBeGreaterThanOrEqual(layout.viewport);
   expect(layout.backHeight).toBeLessThan(60);
+  const backButton = await page.getByRole('button', { name: 'All missions' }).boundingBox();
+  const chapterLabel = await page.locator('#chapter-label').boundingBox();
+  expect(backButton).not.toBeNull();
+  expect(chapterLabel).not.toBeNull();
+  expect(backButton!.x).toBeLessThan(30);
+  expect(backButton!.y).toBeLessThan(30);
+  expect(chapterLabel!.x).toBeGreaterThan(backButton!.x + backButton!.width);
   await expect(page.getByRole('region', { name: 'Survival mission' })).toBeVisible();
   await page.getByRole('button', { name: 'All missions' }).click();
   await expect(cards).toHaveCount(7);

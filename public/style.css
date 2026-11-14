@@ -31,3 +31,8 @@
 .onboarding-card label{display:block;margin:10px 0;padding:14px;background:#17364f;border:1px solid #56849a;border-radius:7px;cursor:pointer}
 .onboarding-card input{margin-right:9px;accent-color:#8ce9db}
 .splash-skip{position:absolute;top:16px;right:16px;padding:7px 12px;color:#c5d5e0;background:#102840;border:1px solid #56849a;border-radius:6px;font-size:12px}
+
+/* Keep only the return control at the top left; the chapter label stays right. */
+#chapter-view .chapter-toolbar{top:8px;left:8px;right:8px;width:auto;max-width:none;justify-content:space-between;padding:0;background:transparent;border:0;backdrop-filter:none;pointer-events:none}
+#chapter-view .chapter-toolbar button,#chapter-view .chapter-toolbar span{pointer-events:auto}
+#chapter-view .chapter-toolbar span{padding:8px;background:#081427dc;border:1px solid #3a6480;border-radius:6px}
