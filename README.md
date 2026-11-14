@@ -4,12 +4,17 @@ A browser-based Phaser 4 and TypeScript game about the choices involved in build
 
 ## Run
 
-```sh
-npm install
-npm run dev-nolog
+In PowerShell, open a terminal in `C:\dev\astro-astro-astro` and run:
+
+```powershell
+npm.cmd install
+npm.cmd run dev-nolog
 ```
 
-Open `http://localhost:8080`. `npm run build-nolog` creates the production bundle in `dist/`.
+Then open [http://localhost:8080](http://localhost:8080) in your browser. Press `Ctrl+C` in the terminal to stop the server.
+
+In other shells, use `npm` in place of `npm.cmd`.
+`npm run build-nolog` creates the production bundle in `dist/`.
 
 ## Project map
 
