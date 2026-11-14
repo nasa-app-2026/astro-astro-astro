@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { enterDirectory } from './helpers/onboarding';
 
 test('pilot the rocket from the launch pad and watch its live camera move', async ({ page }) => {
   test.setTimeout(60_000);
-  await page.goto('/');
+  await enterDirectory(page);
   await page.locator('[data-chapter="flyby"]').click();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'flyby');
   await expect(page.getByRole('img', { name: /rocket camera showing earth, moon, asteroids, and ship position/i })).toBeVisible();

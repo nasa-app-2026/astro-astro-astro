@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { enterDirectory } from './helpers/onboarding';
 
 const missions = [
   ['flyby', 'Flyby test'], ['robots', 'Robots go first'],
@@ -9,7 +10,7 @@ const missions = [
 
 test('all seven missions open directly and return to the directory', async ({ page }) => {
   test.setTimeout(60_000);
-  await page.goto('/');
+  await enterDirectory(page);
   await expect(page.getByRole('heading', { name: /pick your next mission/i })).toBeVisible();
   await expect(page.locator('#game-container canvas')).toBeVisible();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
@@ -29,7 +30,7 @@ test('all seven missions open directly and return to the directory', async ({ pa
 
 test('directory cards are visible on launch and chapters receive the full viewport', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto('/');
+  await enterDirectory(page);
   const cards = page.locator('.chapter-card');
   await expect(cards).toHaveCount(7);
   await expect(cards.first()).toHaveAttribute('data-chapter', 'survival');
@@ -58,7 +59,7 @@ test('directory cards are visible on launch and chapters receive the full viewpo
 });
 
 test('switching missions removes the previous chapter and starts the next one fresh', async ({ page }) => {
-  await page.goto('/');
+  await enterDirectory(page);
   await page.locator('[data-chapter="flyby"]').click();
   const flyby = page.getByRole('region', { name: 'Moon flyby mission control' });
   await expect(flyby).toBeVisible();
@@ -79,7 +80,7 @@ test('switching missions removes the previous chapter and starts the next one fr
 
 test('mission directory works at a narrow viewport with keyboard access', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await enterDirectory(page);
   const cards = page.locator('.chapter-card');
   await expect(cards).toHaveCount(7);
   expect(await cards.evaluateAll((items) => items.every((item) => item.getBoundingClientRect().bottom <= window.innerHeight))).toBe(true);

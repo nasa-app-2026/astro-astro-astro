@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { enterDirectory } from './helpers/onboarding';
 
 test('Survival shows resources, advances a day, and returns to the directory', async ({ page }) => {
-  await page.goto('/');
+  await enterDirectory(page);
   await page.locator('[data-chapter="survival"]').click();
   const mission = page.getByRole('region', { name: 'Survival mission' });
   await expect(mission.getByText('Day 1 of 14')).toBeVisible();

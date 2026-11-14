@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { enterDirectory } from './helpers/onboarding';
 
 test('First landing controls the descent, starts the rover, and allows a return to the directory', async ({ page }) => {
-  await page.goto('/');
+  await enterDirectory(page);
   await page.locator('[data-chapter="firstLanding"]').click();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'firstLanding');
   await expect(page.locator('#chapter-view')).toBeVisible();
@@ -45,7 +46,7 @@ test('First landing controls the descent, starts the rover, and allows a return 
 });
 
 test('First landing resets its mission state after leaving and reopening', async ({ page }) => {
-  await page.goto('/');
+  await enterDirectory(page);
   const canvas = page.locator('#game-container canvas');
   const openMission = async () => {
     await page.locator('[data-chapter="firstLanding"]').click();

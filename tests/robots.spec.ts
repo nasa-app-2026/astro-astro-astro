@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
+import { enterDirectory } from './helpers/onboarding';
 
 test('choose a lunar site and pilot the second cargo rocket from Earth', async ({ page }) => {
   test.setTimeout(60_000);
-  await page.goto('/');
+  await enterDirectory(page);
   await page.locator('[data-chapter="robots"]').click();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'robots');
   await expect(page.getByRole('button', { name: /select shadowed crater/i })).toBeVisible();
