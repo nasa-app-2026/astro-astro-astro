@@ -29,4 +29,4 @@ The directory always offers all seven chapters. Each chapter file owns its gamep
 
 ## Tests
 
-`npm run test` runs the TypeScript check, Vitest unit tests, and Playwright integration tests in Chromium. The browser suite opens every chapter directly, returns to the directory, and checks keyboard access at a narrow viewport. See [AGENTS.md](AGENTS.md) and [the project skill](skills/mission-trainer/SKILL.md) for the testing requirement on future code changes.
+`npm run test` runs the TypeScript check, Vitest unit tests, and Playwright integration tests in Chromium. The browser suite opens every chapter directly, returns to the directory, and checks keyboard access at a narrow viewport. See [AGENTS.md](AGENTS.md) and [the project skill](.agents/skills/mission-trainer/SKILL.md) for the testing requirement on future code changes.

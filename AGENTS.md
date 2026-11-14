@@ -1,6 +1,6 @@
 # Repository instructions
 
-Read [skills/mission-trainer/SKILL.md](skills/mission-trainer/SKILL.md) before changing game code.
+Read [.agents/skills/mission-trainer/SKILL.md](.agents/skills/mission-trainer/SKILL.md) before changing game code.
 
 Keep chapter gameplay in its own file under `src/game/chapters/`. Change shared launcher, catalog, and scene base only when the contract itself must change, so different chapter branches merge cleanly.
 
