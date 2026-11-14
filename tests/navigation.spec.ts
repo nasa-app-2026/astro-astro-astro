@@ -32,6 +32,8 @@ test('directory cards are visible on launch and chapters receive the full viewpo
   await page.goto('/');
   const cards = page.locator('.chapter-card');
   await expect(cards).toHaveCount(7);
+  await expect(cards.first()).toHaveAttribute('data-chapter', 'survival');
+  await expect(page.locator('.chapter-number')).toHaveCount(0);
   await expect(cards.first()).toBeEnabled();
   const directoryFits = await cards.evaluateAll((items) => items.every((item) => {
     const box = item.getBoundingClientRect();
@@ -53,6 +55,26 @@ test('directory cards are visible on launch and chapters receive the full viewpo
   await expect(page.getByRole('region', { name: 'Survival mission' })).toBeVisible();
   await page.getByRole('button', { name: 'All missions' }).click();
   await expect(cards).toHaveCount(7);
+});
+
+test('switching missions removes the previous chapter and starts the next one fresh', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('[data-chapter="flyby"]').click();
+  const flyby = page.getByRole('region', { name: 'Moon flyby mission control' });
+  await expect(flyby).toBeVisible();
+  await flyby.getByRole('button', { name: 'Launch the survey rocket' }).click();
+  await page.getByRole('button', { name: 'All missions' }).click();
+  await expect(flyby).toHaveCount(0);
+
+  await page.locator('[data-chapter="robots"]').click();
+  await expect(page.getByRole('region', { name: 'Lunar rover mission control' })).toBeVisible();
+  await expect(flyby).toHaveCount(0);
+  await expect(page.locator('#chapter-view > :not(.chapter-toolbar)')).toHaveCount(1);
+  await page.getByRole('button', { name: 'All missions' }).click();
+
+  await page.locator('[data-chapter="flyby"]').click();
+  await expect(flyby.getByRole('button', { name: 'Launch the survey rocket' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Lunar rover mission control' })).toHaveCount(0);
 });
 
 test('mission directory works at a narrow viewport with keyboard access', async ({ page }) => {

@@ -9,8 +9,7 @@ function chapterButton(chapter: ChapterInfo, accessibleName: string, open: (chap
   button.disabled = true;
   button.dataset.chapter = chapter.id;
   button.setAttribute('aria-label', accessibleName);
-  button.innerHTML = '<span class="chapter-number"></span><span class="chapter-stage"></span><strong></strong><span class="chapter-summary"></span><span class="chapter-focus"></span><span class="chapter-arrow" aria-hidden="true">↗</span>';
-  button.querySelector('.chapter-number')!.textContent = `MISSION ${String(chapter.number).padStart(2, '0')}`;
+  button.innerHTML = '<span class="chapter-stage"></span><strong></strong><span class="chapter-summary"></span><span class="chapter-focus"></span><span class="chapter-arrow" aria-hidden="true">↗</span>';
   button.querySelector('.chapter-stage')!.textContent = chapter.stage;
   button.querySelector('strong')!.textContent = chapter.title;
   button.querySelector('.chapter-summary')!.textContent = chapter.summary;
@@ -20,8 +19,9 @@ function chapterButton(chapter: ChapterInfo, accessibleName: string, open: (chap
 }
 
 function boot(): void {
-  const app = document.querySelector<HTMLElement>('#app');
-  if (!app) throw new Error('Missing app element');
+  const root = document.querySelector<HTMLElement>('#app');
+  if (!root) throw new Error('Missing app element');
+  const app = root;
   app.innerHTML = `
     <div id="game-container" aria-hidden="true"></div>
     <div class="shell">
@@ -37,20 +37,38 @@ function boot(): void {
   const chapterLabel = app.querySelector<HTMLElement>('#chapter-label')!;
   const grid = app.querySelector<HTMLElement>('#chapter-grid')!;
   const game = StartGame('game-container');
+  let ready = false;
+
+  function renderDirectory(): void {
+    grid.replaceChildren(...missionDirectory(chapters).map((entry) => {
+      const button = chapterButton(entry.chapter, entry.accessibleName, open);
+      button.disabled = !ready;
+      return button;
+    }));
+  }
+
+  function leaveCurrentScene(): void {
+    const current = app.dataset.activeScene;
+    if (current) game.scene.stop(current);
+    chapterView.querySelectorAll(':scope > :not(.chapter-toolbar)').forEach((panel) => panel.remove());
+  }
 
   function open(chapter: ChapterInfo): void {
+    leaveCurrentScene();
     game.scene.start(chapter.id);
-    chapterLabel.textContent = `MISSION ${String(chapter.number).padStart(2, '0')} / ${chapter.title}`;
+    chapterLabel.textContent = chapter.title;
     home.hidden = true;
     chapterView.hidden = false;
     window.scrollTo(0, 0);
   }
 
-  for (const entry of missionDirectory(chapters)) grid.append(chapterButton(entry.chapter, entry.accessibleName, open));
+  renderDirectory();
   app.querySelector<HTMLButtonElement>('#back-button')!.addEventListener('click', () => {
+    leaveCurrentScene();
     game.scene.start('menu');
     chapterView.hidden = true;
     home.hidden = false;
+    renderDirectory();
   });
 
   game.events.once('ready', () => {
@@ -58,6 +76,7 @@ function boot(): void {
       scene.events.on('start', () => { app.dataset.activeScene = scene.scene.key; });
     }
     app.dataset.activeScene = 'menu';
+    ready = true;
     grid.querySelectorAll<HTMLButtonElement>('button').forEach((button) => { button.disabled = false; });
   });
 }
