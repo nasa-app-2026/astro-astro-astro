@@ -5,7 +5,7 @@ test('pilot the rocket from the launch pad and watch its live camera move', asyn
   await page.goto('/');
   await page.locator('[data-chapter="flyby"]').click();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'flyby');
-  await expect(page.getByRole('img', { name: /rocket camera showing earth, moon, and ship position/i })).toBeVisible();
+  await expect(page.getByRole('img', { name: /rocket camera showing earth, moon, asteroids, and ship position/i })).toBeVisible();
 
   await page.locator('#fuel-fill').evaluate((input: HTMLInputElement) => {
     input.value = '90';
