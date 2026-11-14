@@ -3,7 +3,6 @@ import { radiation } from './radiation';
 import { storms } from './storms';
 import { power } from './power';
 import { lifeSupport } from './lifeSupport';
-import { food } from './food';
 import { communication } from './communication';
 import { moonPlaces } from './moonPlaces';
 import { missions } from './missions';
@@ -16,7 +15,6 @@ export {
   storms, 
   power, 
   lifeSupport, 
-  food, 
   communication, 
   moonPlaces, 
   missions 
@@ -27,7 +25,6 @@ export const allFacts: readonly Fact[] = [
   ...Object.values(storms),
   ...Object.values(power),
   ...Object.values(lifeSupport),
-  ...Object.values(food),
   ...Object.values(communication),
   ...Object.values(moonPlaces),
   ...Object.values(missions),
