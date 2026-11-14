@@ -1,10 +1,386 @@
 import { ChapterScene } from './ChapterScene';
 import { chapters } from './catalog';
+import {
+  FLIGHT_ASTEROIDS,
+  FLIGHT_WORLD,
+  FLYBY_SCIENCE,
+  FLYBY_SCIENCE_LABELS,
+  type FlightPlan,
+  type FlightControls,
+  type FlybyScience,
+  type FlybyState,
+  collectFlybyScience,
+  configureFlyby,
+  initialFlybyState,
+  launchFlyby,
+  restartFlyby,
+  stepFlyby,
+} from './flyby.logic';
+
+export {
+  DEFAULT_FLIGHT_PLAN,
+  FLIGHT_ASTEROIDS,
+  FLIGHT_WORLD,
+  FLYBY_SCIENCE,
+  FLYBY_SCIENCE_LABELS,
+  type FlightPlan,
+  type FlightControls,
+  type FlybyScience,
+  type FlybyState,
+} from './flyby.logic';
+export { collectFlybyScience, configureFlyby, initialFlybyState, launchFlyby, restartFlyby, stepFlyby } from './flyby.logic';
+
+const panelStyles = `
+  .flyby-panel{pointer-events:auto;max-width:1000px;margin:18px auto 58px;padding:22px 26px;border:1px solid #47728a;border-radius:16px;background:linear-gradient(145deg,#102a42f2,#09192bf5);box-shadow:0 18px 50px #0005;color:#edf8ff;font:16px Arial,sans-serif}
+  .flyby-panel *{box-sizing:border-box}.flyby-panel .eyebrow{margin:0;color:#79e6dc;font-size:12px;font-weight:bold;letter-spacing:.18em}
+  .flyby-panel h2{margin:8px 0 4px;color:#fff;font-size:clamp(24px,4vw,36px)}.flyby-panel h3{margin:16px 0 8px;color:#e8f5ff;font-size:16px}
+  .flyby-panel .intro{margin:8px 0 18px;color:#c3d8e6;line-height:1.55}.flyby-panel .mission-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin:16px 0}
+  .flyby-panel .camera,.flyby-panel .telemetry{border:1px solid #31516a;border-radius:12px;background:#071827}
+  .flyby-panel .camera{overflow:hidden}.flyby-panel .camera-title{display:flex;justify-content:space-between;padding:10px 12px;color:#8ce9db;font-size:11px;font-weight:bold;letter-spacing:.12em}
+  .flyby-panel .camera svg{display:block;width:100%;height:auto}.flyby-panel .telemetry{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:10px;background:#0d2438}
+  .flyby-panel .stat{padding:10px;border:1px solid #31516a;border-radius:8px;background:#15334d}.flyby-panel .stat span{display:block;color:#a8c6d9;font-size:10px;text-transform:uppercase;letter-spacing:.08em}.flyby-panel .stat strong{display:block;margin-top:6px;color:#fff;font-size:19px}
+  .flyby-panel .progress{height:8px;margin:12px 0 18px;border-radius:8px;background:#27455b;overflow:hidden}.flyby-panel .progress span{display:block;height:100%;border-radius:8px;background:#79e6dc;transition:width .25s}
+  .flyby-panel .message{min-height:44px;margin:14px 0;padding:12px 14px;border-left:3px solid #79e6dc;border-radius:5px;background:#102940;color:#e5f4ff;line-height:1.5}
+  .flyby-panel .controls{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:12px 0}
+  .flyby-panel button{min-height:44px;padding:10px 14px;border:1px solid #71cfc8;border-radius:8px;background:#124354;color:#fff;font-weight:bold}
+  .flyby-panel button:hover:not(:disabled){background:#1b6572}.flyby-panel button:disabled{opacity:.45;cursor:default}
+  .flyby-panel .science-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+  .flyby-panel .science-card{display:flex;align-items:center;gap:8px;min-height:48px;padding:10px;border:1px solid #31516a;border-radius:8px;background:#15334d;color:#d9eaf4;font-size:13px}
+  .flyby-panel .science-card.done{border-color:#5faaa3;background:#123d46}
+  .flyby-panel .note{margin:12px 0 0;color:#9eb8ca;font-size:12px;line-height:1.45}.flyby-panel .key-hint{text-align:center;color:#a8c6d9;font-size:12px}
+  .flyby-panel .plan{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0;padding:14px;border:1px solid #31516a;border-radius:10px;background:#0d2438}
+  .flyby-panel .plan label{display:grid;gap:7px;color:#d9eaf4;font-size:13px;font-weight:bold}
+  .flyby-panel .plan output{color:#8ce9db}.flyby-panel input[type=range],.flyby-panel select{width:100%;accent-color:#79e6dc}
+  .flyby-panel .autopilot{grid-column:1/-1;display:flex!important;grid-template-columns:auto 1fr!important;align-items:center}
+  .flyby-panel .dummy-note{margin:10px 0;padding:10px 12px;border:1px solid #876d4f;border-radius:8px;background:#352d24;color:#ffdfaa;font-size:13px}
+  .flyby-panel .first-person{border:1px solid #31516a;border-radius:12px;background:#030a13;overflow:hidden}.flyby-panel .first-person svg{display:block;width:100%;height:auto}
+  .flyby-panel [hidden]{display:none!important}.flyby-panel .hold-control{touch-action:none;user-select:none}
+  @media(max-width:700px){.flyby-panel{margin:12px 14px 55px;padding:17px}.flyby-panel .mission-grid,.flyby-panel .plan{grid-template-columns:1fr}.flyby-panel .science-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+`;
+
+const scienceActions: Array<{ science: FlybyScience; label: string }> = [
+  { science: FLYBY_SCIENCE.photos, label: 'Take crater photos' },
+  { science: FLYBY_SCIENCE.radiation, label: 'Measure radiation' },
+  { science: FLYBY_SCIENCE.sunlight, label: 'Measure sunlight' },
+  { science: FLYBY_SCIENCE.gravity, label: 'Measure lunar gravity' },
+];
+
+const controlsTemplate: FlightControls = { left: false, right: false, up: false, down: false };
 
 export class FlybyScene extends ChapterScene {
+  private flightState: FlybyState = { ...initialFlybyState };
+  private readonly heldControls: FlightControls = { ...controlsTemplate };
+  private renderFlight: (() => void) | undefined;
+  private rocketMarker: { setPosition(x: number, y: number): unknown; destroy(): void } | undefined;
+  private readonly asteroidMarkers: Array<{ setPosition(x: number, y: number): unknown; destroy(): void }> = [];
+  private lastFlightRender = 0;
+
   constructor() { super(chapters[0]); }
 
   protected createMission(): void {
-    // Chapter 1 implementation goes here. Keep changes in this file.
+    const chapterView = document.getElementById('chapter-view');
+    if (!chapterView) return;
+
+    this.flightState = { ...initialFlybyState, path: [] };
+    Object.assign(this.heldControls, controlsTemplate);
+    this.lastFlightRender = 0;
+
+    const panel = document.createElement('section');
+    panel.className = 'flyby-panel';
+    panel.dataset.missionPanel = 'flyby';
+    panel.setAttribute('aria-label', 'Moon flyby mission control');
+    const styles = document.createElement('style');
+    styles.textContent = panelStyles;
+    panel.append(styles);
+
+    const content = document.createElement('div');
+    content.innerHTML = `
+      <p class="eyebrow">CONTINUOUS GAME · STAGE 1 OF 2</p>
+      <h2>Mission Control: Moon flyby</h2>
+      <p class="intro">Launch from the pad, pilot the ship through space with small thruster controls, gather all four science readings near the Moon, circle it twice, and land safely back at Earth. Three instrumented test dummies ride onboard; no astronauts are on this flight.</p>
+      <div class="plan" id="flyby-plan">
+        <label>Mission time
+          <select id="mission-time"><option value="60">60 minutes · quick survey</option><option value="90" selected>90 minutes · balanced</option><option value="120">120 minutes · extra reserve</option></select>
+        </label>
+        <label>Fill rocket fuel tank <output id="fuel-output">100%</output>
+          <input id="fuel-fill" type="range" min="0" max="100" step="10" value="100" aria-label="Rocket fuel load"/>
+        </label>
+        <label>Store battery power <output id="battery-output">100%</output>
+          <input id="battery-store" type="range" min="25" max="100" step="5" value="100" aria-label="Stored rocket energy"/>
+        </label>
+        <label class="autopilot"><input id="autopilot-plan" type="checkbox" checked/> Program autopilot for the Moon's far-side communication blackout</label>
+      </div>
+      <p class="note">Fuel powers movement; low fuel means slower acceleration. Stored battery powers steering and science instruments. Choose enough mission time and power for the work you plan.</p>
+      <div class="mission-grid">
+        <div class="camera" aria-label="Live ship camera">
+          <div class="camera-title"><span>LIVE FLIGHT CAMERA</span><span id="flyby-camera-state">● READY</span></div>
+          <svg viewBox="0 0 360 200" role="img" aria-label="Rocket camera showing Earth, Moon, asteroids, and ship position">
+            <defs><radialGradient id="flight-space"><stop stop-color="#173b56"/><stop offset="1" stop-color="#06121f"/></radialGradient></defs>
+            <rect width="360" height="200" fill="url(#flight-space)"/>
+            <g fill="#e1f4ff" opacity=".8"><circle cx="24" cy="24" r="1"/><circle cx="128" cy="18" r="1.2"/><circle cx="220" cy="32" r=".9"/><circle cx="330" cy="18" r="1"/><circle cx="305" cy="175" r="1.1"/><circle cx="58" cy="105" r=".8"/></g>
+            <polyline id="flyby-path" points="" fill="none" stroke="#77e6d7" stroke-width="1.5" stroke-dasharray="3 3" opacity=".75"/>
+            <g id="flyby-earth"><circle cx="0" cy="0" r="27" fill="#24689e" stroke="#8bd4f5" stroke-width="2"/><path d="M-20-7Q-12-24-2-17L4-12 0-5-7-7-11 0-19 2ZM2-3 10-10 20-6 17 2 11 4 9 13 3 19-1 10-7 5-5-1Z" fill="#73b98a"/><path d="M-24-12Q-10-28 9-22M-23 13Q-8 25 12 20" fill="none" stroke="#d4f4ff" stroke-width="2" opacity=".8"/><circle cx="0" cy="0" r="30" fill="none" stroke="#65c7e8" stroke-width="1" opacity=".5"/></g>
+            <g id="flyby-moon"><circle cx="0" cy="0" r="14" fill="#a9bac9" stroke="#e1e9ee"/><circle cx="-5" cy="-4" r="3" fill="#75899a"/><circle cx="6" cy="5" r="4" fill="#7e92a2"/><circle cx="3" cy="-7" r="1.5" fill="#8195a3"/></g>
+            <g id="flyby-asteroids"></g>
+            <g id="flyby-ship"><path d="M0-11 7 7 0 4-7 7Z" fill="#d9e8ef" stroke="#fff4d5" stroke-width="1.2"/><path d="M-4 4 0 0 4 4M-2-4H2" fill="none" stroke="#587589" stroke-width="1"/><circle cy="-5" r="2" fill="#52d9f2"/><g fill="#ff8fc7"><circle cx="-3" cy="0" r="1.2"/><circle cx="3" cy="0" r="1.2"/><circle cy="3" r="1.2"/></g><text x="0" y="18" text-anchor="middle" fill="#ffe5ae" font-size="5">3 TEST DUMMIES</text></g>
+          </svg>
+          <div class="camera-title"><span>EARTH BASE</span><span>MOON ORBIT</span><span>TRACKING</span></div>
+        </div>
+        <div class="first-person">
+          <div class="camera-title"><span>FIRST-PERSON NAVIGATION CAMERA</span><span>AVOID ASTEROIDS</span></div>
+          <svg viewBox="0 0 360 112" role="img" aria-label="First-person spacecraft camera with nearby asteroids">
+            <rect width="360" height="112" fill="#030a13"/>
+            <path d="M0 85H360" stroke="#18384b" stroke-width="1"/>
+            <g id="flyby-first-person-objects"></g>
+            <path d="M180 44v24M168 56h24" stroke="#8ce9db" stroke-width="1" opacity=".8"/>
+            <text id="flyby-autopilot-status" x="10" y="101" fill="#9eb8ca" font-size="10">PILOT LINK READY</text>
+          </svg>
+        </div>
+        <div class="telemetry">
+          <div class="stat"><span>Flight state</span><strong id="flyby-phase">On the launch pad</strong></div>
+          <div class="stat"><span>Fuel</span><strong id="flyby-fuel">100%</strong></div>
+          <div class="stat"><span>Stored power</span><strong id="flyby-battery">100%</strong></div>
+          <div class="stat"><span>Position</span><strong id="flyby-position">100, 89</strong></div>
+          <div class="stat"><span>Speed</span><strong id="flyby-speed">0.0 m/s</strong></div>
+          <div class="stat"><span>Earth signal</span><strong id="flyby-signal">100%</strong></div>
+          <div class="stat"><span>Lunar orbits</span><strong id="flyby-orbits">0 / 2</strong></div>
+          <div class="stat"><span>Time remaining</span><strong id="flyby-time">90 min</strong></div>
+          <div class="stat"><span>Radiation</span><strong id="flyby-radiation">Not measured</strong></div>
+        </div>
+      </div>
+      <div class="progress" role="progressbar" aria-label="Flyby mission progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="flyby-progress" style="width:0%"></span></div>
+      <h3>Mission jobs</h3><div class="science-list" id="flyby-science"></div>
+      <p class="message" id="flyby-message" aria-live="polite"></p>
+      <div class="controls" id="flyby-launch"><button type="button" data-action="launch">Launch the survey rocket</button></div>
+      <div id="flyby-flight" hidden>
+        <div class="controls" role="group" aria-label="Hold to steer the spacecraft">
+          <button type="button" class="hold-control" data-control="left" aria-label="Thrust left">◀ Left thruster</button>
+          <button type="button" class="hold-control" data-control="up" aria-label="Thrust up">▲ Main thruster</button>
+          <button type="button" class="hold-control" data-control="down" aria-label="Thrust down">▼ Reverse thruster</button>
+          <button type="button" class="hold-control" data-control="right" aria-label="Thrust right">Right thruster ▶</button>
+        </div>
+        <p class="key-hint">Hold arrow keys or these thruster buttons for precise movement. Release to coast; use reverse thrust to slow down.</p>
+        <div class="controls" id="flyby-instruments"></div>
+      </div>
+      <div class="controls" id="flyby-retry" hidden><button type="button" data-action="retry">Restart flight</button></div>
+      <div class="controls" id="flyby-continue" hidden><button type="button" data-action="continue">Launch the rover mission</button></div>
+      <p class="note">Science references: Artemis I radiation measurements (~1 mSv/day near the Moon), sunlight at lunar distance (~1,361 W/m²), and lunar gravity (~1.62 m/s²). These are educational reference values, not live readings.</p>`;
+    panel.append(content);
+
+    this.rocketMarker = this.add.circle(100, 540, 10, 0xffcf71, 0.95).setDepth(8);
+    this.asteroidMarkers.splice(0, this.asteroidMarkers.length);
+    FLIGHT_ASTEROIDS.forEach((asteroid) => {
+      this.asteroidMarkers.push(this.add.circle(
+        asteroid.x / FLIGHT_WORLD.width * 1024,
+        (FLIGHT_WORLD.height - asteroid.y) / FLIGHT_WORLD.height * 640,
+        Math.max(5, asteroid.radius / FLIGHT_WORLD.width * 1024),
+        0x827b73,
+        0.9,
+      ).setDepth(7));
+    });
+
+    const scienceList = content.querySelector<HTMLElement>('#flyby-science')!;
+    scienceList.innerHTML = scienceActions.map(({ science, label }) => `<div class="science-card" data-science-card="${science}">${label}</div>`).join('');
+    const instruments = content.querySelector<HTMLElement>('#flyby-instruments')!;
+    const powerCosts: Record<FlybyScience, number> = { photos: 15, radiation: 10, sunlight: 10, gravity: 8 };
+    instruments.innerHTML = scienceActions.map(({ science, label }) => `<button type="button" data-action="science" data-science="${science}" aria-label="${FLYBY_SCIENCE_LABELS[science]}" disabled>${label} · ${powerCosts[science]} power</button>`).join('');
+    const planControls = {
+      fuel: content.querySelector<HTMLInputElement>('#fuel-fill')!,
+      battery: content.querySelector<HTMLInputElement>('#battery-store')!,
+      duration: content.querySelector<HTMLSelectElement>('#mission-time')!,
+      autopilot: content.querySelector<HTMLInputElement>('#autopilot-plan')!,
+    };
+    const updatePlanOutputs = (): void => {
+      content.querySelector<HTMLOutputElement>('#fuel-output')!.value = `${planControls.fuel.value}%`;
+      content.querySelector<HTMLOutputElement>('#battery-output')!.value = `${planControls.battery.value}%`;
+    };
+    planControls.fuel.addEventListener('input', updatePlanOutputs);
+    planControls.battery.addEventListener('input', updatePlanOutputs);
+    updatePlanOutputs();
+
+    content.querySelector<SVGGElement>('#flyby-asteroids')!.innerHTML = FLIGHT_ASTEROIDS.map((_, index) =>
+      `<g id="asteroid-${index}"><circle r="4" fill="#827b73" stroke="#c0b9a7" stroke-width="1"/><circle cx="-1" cy="-1" r="1" fill="#b9ada4"/></g>`,
+    ).join('');
+    content.querySelector<SVGGElement>('#flyby-first-person-objects')!.innerHTML = FLIGHT_ASTEROIDS.map((_, index) =>
+      `<g id="first-person-asteroid-${index}"><path d="M-7-5 0-9 8-3 5 6-3 8-9 2Z" fill="#9b938d" stroke="#d3c7b5" stroke-width="1"/></g>`,
+    ).join('');
+
+    const updateDisplay = (): void => {
+      const state = this.flightState;
+      const speed = Math.hypot(state.vx, state.vy);
+      const mapPoint = (point: { x: number; y: number }): { x: number; y: number } => ({
+        x: 18 + point.x / FLIGHT_WORLD.width * 324,
+        y: 12 + (FLIGHT_WORLD.height - point.y) / FLIGHT_WORLD.height * 176,
+      });
+      const earth = mapPoint(FLIGHT_WORLD.earth);
+      const moon = mapPoint(FLIGHT_WORLD.moon);
+      const ship = mapPoint(state);
+      const earthElement = content.querySelector<SVGGElement>('#flyby-earth');
+      const moonElement = content.querySelector<SVGGElement>('#flyby-moon');
+      const shipElement = content.querySelector<SVGGElement>('#flyby-ship');
+      earthElement?.setAttribute('transform', `translate(${earth.x.toFixed(1)} ${earth.y.toFixed(1)})`);
+      moonElement?.setAttribute('transform', `translate(${moon.x.toFixed(1)} ${moon.y.toFixed(1)})`);
+      shipElement?.setAttribute('transform', `translate(${ship.x.toFixed(1)} ${ship.y.toFixed(1)}) rotate(${(90 - state.heading * 180 / Math.PI).toFixed(1)})`);
+      FLIGHT_ASTEROIDS.forEach((asteroid, index) => {
+        const point = mapPoint(asteroid);
+        content.querySelector<SVGGElement>(`#asteroid-${index}`)?.setAttribute('transform', `translate(${point.x.toFixed(1)} ${point.y.toFixed(1)})`);
+        const dx = asteroid.x - state.x;
+        const dy = asteroid.y - state.y;
+        const distance = Math.hypot(dx, dy);
+        const relative = Math.atan2(dy, dx) - state.heading;
+        const angle = Math.atan2(Math.sin(relative), Math.cos(relative));
+        const visible = distance < 260 && Math.cos(angle) > -0.15;
+        const scale = Math.max(0.45, Math.min(2.4, 190 / Math.max(distance, 1)));
+        const x = 180 + Math.sin(angle) * Math.min(150, distance * 0.7);
+        const y = 55 + (1 - Math.cos(angle)) * 18;
+        const object = content.querySelector<SVGGElement>(`#first-person-asteroid-${index}`);
+        object?.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${scale.toFixed(2)})`);
+        object?.setAttribute('opacity', visible ? `${Math.max(0.35, 1 - distance / 320)}` : '0');
+      });
+      const remainingMinutes = Math.max(0, state.missionMinutes - state.elapsedMinutes);
+      const pathPoints = state.path.map((point) => {
+        const mapped = mapPoint(point);
+        return `${mapped.x.toFixed(1)},${mapped.y.toFixed(1)}`;
+      }).join(' ');
+      content.querySelector<SVGPolylineElement>('#flyby-path')?.setAttribute('points', pathPoints);
+
+      content.querySelector<HTMLElement>('#flyby-phase')!.textContent = ({
+        briefing: 'On the launch pad',
+        launching: 'Climbing through atmosphere',
+        cruise: 'Deep-space flight',
+        returning: 'Return to Earth',
+        complete: 'Landed safely',
+        crashed: 'Flight ended',
+      })[state.phase];
+      content.querySelector<HTMLElement>('#flyby-fuel')!.textContent = `${state.fuel.toFixed(0)}%`;
+      content.querySelector<HTMLElement>('#flyby-battery')!.textContent = `${state.battery.toFixed(0)}%`;
+      content.querySelector<HTMLElement>('#flyby-time')!.textContent = `${remainingMinutes.toFixed(0)} min`;
+      content.querySelector<HTMLElement>('#flyby-position')!.textContent = `${state.x.toFixed(0)}, ${state.y.toFixed(0)}`;
+      content.querySelector<HTMLElement>('#flyby-speed')!.textContent = `${speed.toFixed(1)} m/s`;
+      content.querySelector<HTMLElement>('#flyby-signal')!.textContent = `${state.signal}%`;
+      content.querySelector<HTMLElement>('#flyby-orbits')!.textContent = `${state.orbits} / 2`;
+      content.querySelector<HTMLElement>('#flyby-radiation')!.textContent = state.doseMsv ? `${state.doseMsv} mSv/day` : 'Not measured';
+      content.querySelector<HTMLElement>('#flyby-message')!.textContent = state.message;
+      content.querySelector<SVGTextElement>('#flyby-autopilot-status')!.textContent = state.signal < 100
+        ? state.autopilot ? 'RADIO BLACKOUT · AUTOPILOT HOLDING COURSE' : 'RADIO BLACKOUT · PILOT INPUT UNAVAILABLE'
+        : state.autopilot ? 'AUTOPILOT ARMED · PILOT CONTROL AVAILABLE' : 'MANUAL CONTROL · RADIO LINK AVAILABLE';
+      content.querySelector<HTMLElement>('#flyby-camera-state')!.textContent = state.phase === 'briefing' ? '● READY' : state.phase === 'complete' ? '● HOME SAFE' : '● LIVE';
+      content.querySelector<HTMLElement>('#flyby-launch')!.hidden = state.phase !== 'briefing';
+      content.querySelector<HTMLElement>('#flyby-plan')!.hidden = state.phase !== 'briefing';
+      content.querySelector<HTMLElement>('#flyby-flight')!.hidden = !['launching', 'cruise', 'returning'].includes(state.phase);
+      content.querySelector<HTMLElement>('#flyby-retry')!.hidden = state.phase !== 'crashed';
+      content.querySelector<HTMLElement>('#flyby-continue')!.hidden = state.phase !== 'complete';
+
+      const progress = state.phase === 'complete' ? 100 : Math.min(95, state.science.length * 14 + state.orbits * 20 + (state.phase === 'returning' ? 5 : 0));
+      content.querySelector<HTMLElement>('#flyby-progress')!.style.width = `${progress}%`;
+      content.querySelector<HTMLElement>('[role="progressbar"]')!.setAttribute('aria-valuenow', `${progress}`);
+      for (const { science } of scienceActions) {
+        const available = !state.science.includes(science) && (
+          science === FLYBY_SCIENCE.photos ? distanceToMoon(state) <= 245
+            : science === FLYBY_SCIENCE.gravity ? distanceToMoon(state) <= 165
+              : science === FLYBY_SCIENCE.sunlight ? state.y >= 150 && distanceToMoon(state) <= 280
+                : state.y >= 150
+        );
+        const button = content.querySelector<HTMLButtonElement>(`button[data-science="${science}"]`);
+        if (button) button.disabled = !available || state.battery < powerCosts[science] || (state.signal < 100 && !state.autopilot);
+        const card = content.querySelector<HTMLElement>(`[data-science-card="${science}"]`);
+        card?.classList.toggle('done', state.science.includes(science));
+      }
+
+      this.rocketMarker?.setPosition(state.x / FLIGHT_WORLD.width * 1024, (FLIGHT_WORLD.height - state.y) / FLIGHT_WORLD.height * 640);
+    };
+    this.renderFlight = updateDisplay;
+
+    const controls = panel.querySelectorAll<HTMLButtonElement>('[data-control]');
+    controls.forEach((button) => {
+      const control = button.dataset.control as keyof FlightControls;
+      button.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        this.heldControls[control] = true;
+      });
+      const release = (): void => { this.heldControls[control] = false; };
+      button.addEventListener('pointerup', release);
+      button.addEventListener('pointerleave', release);
+      button.addEventListener('pointercancel', release);
+      button.addEventListener('click', () => {
+        const pulse = { ...controlsTemplate, [control]: true };
+        this.flightState = stepFlyby(this.flightState, pulse, 0.12);
+        updateDisplay();
+      });
+    });
+
+    panel.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest<HTMLButtonElement>('button[data-action]');
+      if (!button) return;
+      if (button.dataset.action === 'launch') {
+        const plan: FlightPlan = {
+          fuelLoad: Number(planControls.fuel.value),
+          energyStore: Number(planControls.battery.value),
+          missionMinutes: Number(planControls.duration.value),
+          autopilot: planControls.autopilot.checked,
+        };
+        this.flightState = launchFlyby(configureFlyby(this.flightState, plan));
+      }
+      else if (button.dataset.action === 'science') this.flightState = collectFlybyScience(this.flightState, button.dataset.science as FlybyScience);
+      else if (button.dataset.action === 'retry') this.flightState = restartFlyby();
+      else if (button.dataset.action === 'continue' && this.flightState.phase === 'complete') {
+        const label = document.getElementById('chapter-label');
+        if (label) label.textContent = 'MISSION 02 / Robots go first';
+        this.scene.start('robots');
+        return;
+      }
+      updateDisplay();
+    });
+
+    const keyboard = this.input.keyboard;
+    const keyControls: Record<string, keyof FlightControls> = {
+      arrowleft: 'left', a: 'left',
+      arrowright: 'right', d: 'right',
+      arrowup: 'up', w: 'up',
+      arrowdown: 'down', s: 'down',
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
+      const control = keyControls[event.key.toLowerCase()];
+      if (!control) return;
+      event.preventDefault();
+      this.heldControls[control] = true;
+    };
+    const onKeyUp = (event: KeyboardEvent): void => {
+      const control = keyControls[event.key.toLowerCase()];
+      if (control) this.heldControls[control] = false;
+    };
+    keyboard?.on('keydown', onKeyDown);
+    keyboard?.on('keyup', onKeyUp);
+
+    chapterView.append(panel);
+    const cleanup = (): void => {
+      keyboard?.off('keydown', onKeyDown);
+      keyboard?.off('keyup', onKeyUp);
+      Object.assign(this.heldControls, controlsTemplate);
+      this.renderFlight = undefined;
+      this.rocketMarker?.destroy();
+      this.rocketMarker = undefined;
+      this.asteroidMarkers.forEach((marker) => marker.destroy());
+      this.asteroidMarkers.splice(0, this.asteroidMarkers.length);
+      panel.remove();
+    };
+    this.events.once('shutdown', cleanup);
+    this.events.once('destroy', cleanup);
+    updateDisplay();
   }
+
+  update(time: number, delta: number): void {
+    if (this.flightState.phase === 'briefing' || this.flightState.phase === 'complete' || this.flightState.phase === 'crashed') return;
+    this.flightState = stepFlyby(this.flightState, this.heldControls, delta / 1000);
+    if (time - this.lastFlightRender >= 80) {
+      this.lastFlightRender = time;
+      this.renderFlight?.();
+    }
+  }
+}
+
+function distanceToMoon(state: FlybyState): number {
+  return Math.hypot(state.x - FLIGHT_WORLD.moon.x, state.y - FLIGHT_WORLD.moon.y);
 }

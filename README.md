@@ -1,6 +1,6 @@
 # Junior Astronaut Mission Trainer
 
-A browser-based Phaser 4 and TypeScript game about the choices involved in building a Moon outpost. The current milestone provides an open mission directory and seven independent chapter workspaces. Gameplay for each chapter is ready for the team to implement.
+A browser-based Phaser 4 and TypeScript game about the choices involved in building a Moon outpost. Missions 1 and 2 form a continuous flyby-and-rover game, while all seven missions remain directly selectable from the directory and the other chapter workspaces stay independent.
 
 ## Run
 
@@ -31,6 +31,8 @@ In other shells, use `npm` in place of `npm.cmd`.
 - `src/game/chapters/<id>.ts` — one independent scene file per chapter.
 
 The directory always offers all seven chapters. Each chapter file owns its gameplay through `createMission()`. Teammates should avoid editing shared files unless they need to change the chapter contract; this keeps separate chapter branches easy to merge.
+
+Missions 1 and 2 connect as one continuous game: pilot the flyby ship from Earth with the arrow keys, use its live camera and science instruments, land back at Earth, then choose a site and drive the rover with the arrows to map terrain and take pictures. Hold a direction for fine control; on-screen controls also work with a mouse or touch.
 
 ## Tests
 

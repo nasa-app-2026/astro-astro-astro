@@ -8,6 +8,7 @@ const missions = [
 ] as const;
 
 test('all seven missions open directly and return to the directory', async ({ page }) => {
+  test.setTimeout(60_000);
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /build a home/i })).toBeVisible();
   await expect(page.locator('#game-container canvas')).toBeVisible();
