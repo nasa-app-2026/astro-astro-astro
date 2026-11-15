@@ -1,17 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import {
   collectSupply,
-  HABITAT_POSITION,
+  BUILD_SITE_POSITION,
   landingOutcome,
+  LANDER_POSITION,
   LANDING_PAD_X,
   LANDING_START,
   LANDING_SURFACE_Y,
-  ROVER_START,
+  ASTRONAUT_START,
+  astronautIsAtLander,
+  getAstronautWalkingPose,
+  stepAstronaut,
   stepLanding,
-  stepRover,
 } from './firstLanding/rules';
 
-describe('first landing flight and rover rules', () => {
+describe('first landing flight and astronaut rules', () => {
   it('uses fuel to slow the lander during descent', () => {
     const state = {
       x: 600, y: 300, horizontalSpeed: 0, verticalSpeed: 40, fuel: 100, oxygen: 100,
@@ -71,37 +74,64 @@ describe('first landing flight and rover rules', () => {
     expect(state.fuel).toBeLessThan(LANDING_START.fuel);
   });
 
-  it('moves the rover and spends oxygen and battery away from the habitat', () => {
-    const next = stepRover(ROVER_START, {
+  it('moves the astronaut and spends oxygen and battery away from the lander', () => {
+    const next = stepAstronaut({ ...ASTRONAUT_START, x: 640 }, {
       left: false, right: true, up: false, down: false,
     }, 0.05);
 
-    expect(next.x).toBeGreaterThan(ROVER_START.x);
-    expect(next.oxygen).toBeLessThan(ROVER_START.oxygen);
-    expect(next.battery).toBeLessThan(ROVER_START.battery);
+    expect(next.x).toBeGreaterThan(640);
+    expect(next.oxygen).toBeLessThan(ASTRONAUT_START.oxygen);
+    expect(next.battery).toBeLessThan(ASTRONAUT_START.battery);
   });
 
-  it('applies rover movement and resource use across a long frame', () => {
+  it('drains EVA oxygen a little faster while the astronaut is away from the lander', () => {
+    const next = stepAstronaut({ ...ASTRONAUT_START, x: 640 }, {
+      left: false, right: false, up: false, down: false,
+    }, 1);
+
+    expect(next.oxygen).toBeCloseTo(ASTRONAUT_START.oxygen - 2);
+  });
+
+  it('swings opposite arms and legs while walking and returns them to neutral when still', () => {
+    const walkingPose = getAstronautWalkingPose(Math.PI / 2, true);
+    const standingPose = getAstronautWalkingPose(Math.PI / 2, false);
+
+    expect(walkingPose.legSwing).toBeGreaterThan(0);
+    expect(walkingPose.armSwing).toBeLessThan(0);
+    expect(walkingPose.bob).toBeGreaterThan(0);
+    expect(standingPose).toEqual({ armSwing: 0, legSwing: 0, bob: 0 });
+  });
+
+  it('applies astronaut movement and resource use across a long frame', () => {
     const controls = { left: false, right: true, up: false, down: false };
-    const longFrame = stepRover(ROVER_START, controls, 0.2);
-    let shortFrames = ROVER_START;
-    for (let frame = 0; frame < 4; frame += 1) shortFrames = stepRover(shortFrames, controls, 0.05);
+    const longFrame = stepAstronaut(ASTRONAUT_START, controls, 0.2);
+    let shortFrames = ASTRONAUT_START;
+    for (let frame = 0; frame < 4; frame += 1) shortFrames = stepAstronaut(shortFrames, controls, 0.05);
 
     expect(longFrame).toEqual(shortFrames);
-    expect(longFrame.x).toBeGreaterThan(ROVER_START.x + 0.05);
+    expect(longFrame.x).toBeGreaterThan(ASTRONAUT_START.x + 0.05);
   });
 
-  it('recharges oxygen and battery at the habitat', () => {
-    const next = stepRover({ ...ROVER_START, ...HABITAT_POSITION }, {
+  it('recharges at the lander but not at the empty build site', () => {
+    const atLander = { ...ASTRONAUT_START, ...LANDER_POSITION, oxygen: 50, battery: 50 };
+    const atBuildSite = { ...ASTRONAUT_START, ...BUILD_SITE_POSITION, oxygen: 50, battery: 50 };
+    const next = stepAstronaut(atLander, {
+      left: false, right: false, up: false, down: false,
+    }, 0.05);
+    const emptySite = stepAstronaut(atBuildSite, {
       left: false, right: false, up: false, down: false,
     }, 0.05);
 
-    expect(next.oxygen).toBeGreaterThan(ROVER_START.oxygen);
-    expect(next.battery).toBeGreaterThan(ROVER_START.battery);
+    expect(astronautIsAtLander(atLander)).toBe(true);
+    expect(astronautIsAtLander(atBuildSite)).toBe(false);
+    expect(next.oxygen).toBeGreaterThan(atLander.oxygen);
+    expect(next.battery).toBeGreaterThan(atLander.battery);
+    expect(emptySite.oxygen).toBeLessThan(atBuildSite.oxygen);
+    expect(emptySite.battery).toBeLessThan(atBuildSite.battery);
   });
 
   it('collects supplies and clamps resource packs at full capacity', () => {
-    const collected = collectSupply({ ...ROVER_START, oxygen: 85, battery: 90 }, 'oxygen');
+    const collected = collectSupply({ ...ASTRONAUT_START, oxygen: 85, battery: 90 }, 'oxygen');
     expect(collected.oxygen).toBe(100);
     expect(collected.battery).toBe(90);
     expect(collected.supplies).toBe(1);

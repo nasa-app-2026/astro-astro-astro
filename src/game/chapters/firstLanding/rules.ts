@@ -13,7 +13,7 @@ export interface LandingControls {
   readonly thrust: boolean;
 }
 
-export interface RoverState {
+export interface AstronautState {
   readonly x: number;
   readonly y: number;
   readonly oxygen: number;
@@ -25,6 +25,9 @@ export type SupplyKind = 'oxygen' | 'battery' | 'supplies';
 
 export const LANDING_SURFACE_Y = 390;
 export const LANDING_PAD_X = 730;
+export const LANDER_POSITION = { x: LANDING_PAD_X, y: 350 } as const;
+export const ASTRONAUT_LANDER_RADIUS = 62;
+export const BUILD_SITE_POSITION = { x: 150, y: 350 } as const;
 export const LANDING_START: LandingState = {
   x: 600,
   y: 120,
@@ -76,22 +79,37 @@ export function landingOutcome(state: LandingState): 'flight' | 'landed' | 'cras
   return onPad && gentle ? 'landed' : 'crash';
 }
 
-export const ROVER_START: RoverState = {
-  x: 730,
-  y: 350,
+export const ASTRONAUT_START: AstronautState = {
+  x: LANDER_POSITION.x,
+  y: LANDER_POSITION.y,
   oxygen: 70,
   battery: 62,
   supplies: 0,
 };
 
-export const HABITAT_POSITION = { x: 150, y: 350 } as const;
-export const ROVER_HABITAT_RADIUS = 62;
+export const ASTRONAUT_OXYGEN_DRAIN_PER_SECOND = 2;
 
-export function stepRover(
-  state: RoverState,
+export interface AstronautWalkingPose {
+  readonly armSwing: number;
+  readonly legSwing: number;
+  readonly bob: number;
+}
+
+export function getAstronautWalkingPose(phase: number, walking: boolean): AstronautWalkingPose {
+  if (!walking) return { armSwing: 0, legSwing: 0, bob: 0 };
+  const stride = Math.sin(phase);
+  return {
+    armSwing: -stride * 0.32,
+    legSwing: stride * 0.48,
+    bob: Math.abs(Math.sin(phase * 2)) * 1.5,
+  };
+}
+
+export function stepAstronaut(
+  state: AstronautState,
   controls: { readonly left: boolean; readonly right: boolean; readonly up: boolean; readonly down: boolean },
   deltaSeconds: number,
-): RoverState {
+): AstronautState {
   const totalDelta = Math.max(0, deltaSeconds);
   const steps = Math.max(1, Math.ceil(totalDelta / 0.05));
   const delta = totalDelta / steps;
@@ -101,12 +119,12 @@ export function stepRover(
   let next = state;
 
   for (let step = 0; step < steps; step += 1) {
-    const atHabitat = Math.hypot(next.x - HABITAT_POSITION.x, next.y - HABITAT_POSITION.y) <= ROVER_HABITAT_RADIUS;
+    const atLander = Math.hypot(next.x - LANDER_POSITION.x, next.y - LANDER_POSITION.y) <= ASTRONAUT_LANDER_RADIUS;
     next = {
       x: clamp(next.x + horizontal * 150 * delta, 80, 944),
       y: clamp(next.y + vertical * 120 * delta, 282, 388),
-      oxygen: clamp(next.oxygen + (atHabitat ? 9 : -1.6) * delta, 0, 100),
-      battery: clamp(next.battery + (atHabitat ? 13 : moving ? -5 : -0.5) * delta, 0, 100),
+      oxygen: clamp(next.oxygen + (atLander ? 9 : -ASTRONAUT_OXYGEN_DRAIN_PER_SECOND) * delta, 0, 100),
+      battery: clamp(next.battery + (atLander ? 13 : moving ? -5 : -0.5) * delta, 0, 100),
       supplies: next.supplies,
     };
   }
@@ -114,7 +132,7 @@ export function stepRover(
   return next;
 }
 
-export function collectSupply(state: RoverState, kind: SupplyKind): RoverState {
+export function collectSupply(state: AstronautState, kind: SupplyKind): AstronautState {
   return {
     ...state,
     oxygen: clamp(state.oxygen + (kind === 'oxygen' ? 28 : 0), 0, 100),
@@ -123,6 +141,6 @@ export function collectSupply(state: RoverState, kind: SupplyKind): RoverState {
   };
 }
 
-export function roverIsAtHabitat(state: RoverState): boolean {
-  return Math.hypot(state.x - HABITAT_POSITION.x, state.y - HABITAT_POSITION.y) <= ROVER_HABITAT_RADIUS;
+export function astronautIsAtLander(state: AstronautState): boolean {
+  return Math.hypot(state.x - LANDER_POSITION.x, state.y - LANDER_POSITION.y) <= ASTRONAUT_LANDER_RADIUS;
 }
