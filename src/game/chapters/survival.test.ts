@@ -24,6 +24,28 @@ import { freshFood } from '../../data/chapter5/challenges/fresh-food';
 import { advanceFreshFood, startFreshFood } from '../../rules/chapter5/fresh-food';
 import { iceToAir } from '../../data/chapter5/challenges/ice-to-air';
 import { advanceIceToAir, startIceToAir } from '../../rules/chapter5/ice-to-air';
+import { trainingOrder, initialTrainingProgress, finishChallenge, nextChallenge, bigConnections } from '../../rules/chapter5/training';
+import { bestTrainingChange } from '../../rules/chapter5/training-replay';
+
+describe('Training progress', () => {
+  it('tracks each challenge in order and finishes after the fifth', () => {
+    let progress = initialTrainingProgress();
+    for (const name of trainingOrder) { expect(nextChallenge(progress)).toBe(name); progress = finishChallenge(progress, name); }
+    expect(progress.finished).toBe(true);
+    expect(nextChallenge(progress)).toBeNull();
+  });
+  it('chooses only connections actually found in the decisions', () => {
+    const base = { challenge: 'Ice to air' as const, day: 1, oxygen: 0, energyUsed: 47, description: 'Split', changes: '', science: 0 };
+    expect(bigConnections([{ ...base, action: 'split' }])).toEqual(['Energy makes oxygen.']);
+    expect(bigConnections([{ ...base, action: 'shelter' }, { ...base, action: 'lab' }])).toEqual(['Science used energy.', 'Sheltering cost a day of science.']);
+  });
+  it('compares a changed choice through challenge replay', () => {
+    const result = bestTrainingChange([{ challenge: 'Into the dark', region: 'haworth', choices: Array.from({ length: 5 }, () => ({ action: 'rest', oxygen: 0 })) }]);
+    expect(result?.challenge).toBe('Into the dark');
+    expect(result?.day).toBe(1);
+    expect(result?.choice.oxygen).toBe(1);
+  });
+});
 
 describe('Ice to air', () => {
   it('digs extra ice at Haworth and converts water to oxygen using energy', () => {

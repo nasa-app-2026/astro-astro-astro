@@ -22,6 +22,8 @@ import { freshFood } from '../../data/chapter5/challenges/fresh-food';
 import { advanceFreshFood, startFreshFood, type FoodAction } from '../../rules/chapter5/fresh-food';
 import { iceToAir } from '../../data/chapter5/challenges/ice-to-air';
 import { advanceIceToAir, startIceToAir, type IceAction } from '../../rules/chapter5/ice-to-air';
+import { trainingOrder, trainingStorageKey, initialTrainingProgress, finishChallenge, nextChallenge, bigConnections, type TrainingEntry, type TrainingChallenge, type TrainingProgress } from '../../rules/chapter5/training';
+import { bestTrainingChange, type TrainingAttempt, type TrainingChoice } from '../../rules/chapter5/training-replay';
 import './survival/site.css';
 
 export class SurvivalScene extends ChapterScene {
@@ -75,12 +77,121 @@ export class SurvivalScene extends ChapterScene {
       item.append(label, text, sources);
       return item;
     };
+    let progress: TrainingProgress = initialTrainingProgress();
+    let entries: TrainingEntry[] = [];
+    let attempts: TrainingAttempt[] = [];
+    try {
+      const saved = localStorage.getItem(trainingStorageKey);
+      if (saved === 'complete') progress = { completed: [...trainingOrder], finished: true };
+      else if (saved) {
+        const parsed: unknown = JSON.parse(saved);
+        const record = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as { completed?: unknown; entries?: unknown; attempts?: unknown } : { completed: parsed };
+        const completed = record.completed;
+        if (Array.isArray(completed) && completed.every((name, index) => name === trainingOrder[index]) && completed.length <= trainingOrder.length) {
+          progress = { completed: completed as TrainingChallenge[], finished: completed.length === trainingOrder.length };
+          if (Array.isArray(record.entries) && Array.isArray(record.attempts)) { entries = record.entries as TrainingEntry[]; attempts = record.attempts as TrainingAttempt[]; }
+        }
+      }
+    } catch { /* Training continues when storage is unavailable. */ }
+    let replayMode = progress.finished;
+    let currentAttempt: TrainingAttempt | null = null;
+    const beginAttempt = (challenge: TrainingChallenge, plan?: Parameters<typeof startStormAlert>[0]) => {
+      currentAttempt = { challenge, region: this.state.chosenRegion ?? 'haworth', choices: [], plan };
+    };
+    const record = (action: string, oxygen: number, energyUsed: number, description: string, changes: string, science: number, remaining: number, capacity: number) => {
+      if (!currentAttempt) return;
+      const choice: TrainingChoice = { action, oxygen };
+      currentAttempt = { ...currentAttempt, choices: [...currentAttempt.choices, choice] };
+      entries.push({ challenge: currentAttempt.challenge, day: currentAttempt.choices.length, action, oxygen, energyUsed, description, changes, science });
+      if (remaining <= capacity * settings.gaugeLowFraction) {
+        const count = currentAttempt.choices.length;
+        const start = entries.length - count;
+        const earlier = entries.slice(start, -1);
+        const max = Math.max(0, ...earlier.map(entry => entry.energyUsed));
+        if (max > 0) entries = entries.map((entry, index) => index >= start && index < entries.length - 1 && entry.energyUsed === max ? { ...entry, links: [...(entry.links ?? []), count] } : entry);
+      }
+    };
+    const saveAttempt = () => { if (currentAttempt) { attempts.push(currentAttempt); currentAttempt = null; } };
+    const progressStrip = (active: TrainingChallenge) => {
+      const nav = document.createElement('nav'); nav.className = 'survival-progress-strip'; nav.setAttribute('aria-label', 'Training progress');
+      for (const name of trainingOrder) {
+        const item = document.createElement('span'); item.textContent = `${progress.completed.includes(name) ? '●' : '○'} ${name}`;
+        if (name === active) item.setAttribute('aria-current', 'step'); nav.append(item);
+      }
+      panel.append(nav);
+    };
+    const appendTrainingLog = () => {
+      const toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'survival-log-button'; toggle.textContent = '💡 Log'; toggle.setAttribute('aria-expanded', 'false');
+      const view = document.createElement('section'); view.className = 'survival-log'; view.setAttribute('aria-label', 'Decision log'); view.hidden = true;
+      const title = document.createElement('h2'); title.textContent = 'Decision log'; view.append(title);
+      const list = document.createElement('ol');
+      for (const entry of [...entries].reverse()) {
+        const line = document.createElement('li');
+        const links = (entry.links ?? []).map(day => ` ↳ Day ${day}: low energy`).join('');
+        line.textContent = getPlayerProfile().ageRange === '10-12' ? `${entry.challenge} · Day ${entry.day}: ${entry.description} · +${entry.science} science ↳ ${entry.energyUsed} kWh because ${entry.energyUsed ? 'the activity or oxygen production uses energy' : 'this choice uses no extra energy'}. ${entry.changes}${links}` : `Day ${entry.day} 🧪 ${entry.description} ↳ ⚡. Choices can use energy.${links}`;
+        list.append(line);
+      }
+      view.append(list); toggle.addEventListener('click', () => { view.hidden = !view.hidden; toggle.setAttribute('aria-expanded', String(!view.hidden)); });
+      panel.append(toggle, view);
+    };
+    const showFinalDebrief = () => {
+      heading('Training debrief');
+      const turning = bestTrainingChange(attempts);
+      paragraph(turning ? `★ Your turning point: ${turning.challenge}, day ${turning.day}. You could try ${turning.choice.action}${turning.choice.oxygen ? ` and ${turning.choice.oxygen} kg oxygen` : ''}.` : '★ You did well! No single change improved the recorded training.');
+      const connections = bigConnections(entries);
+      const older = getPlayerProfile().ageRange === '10-12';
+      if (older && entries.length) {
+        const first = entries[0];
+        paragraph(`What do you think happened to energy after your day ${first.day} choice in ${first.challenge}?`);
+        const answer = document.createElement('p'); answer.hidden = true; answer.textContent = `Your recorded result: ${first.changes}`;
+        for (const symbol of ['🔋', '🌡️', '🌀']) button(symbol, () => { answer.hidden = false; });
+        panel.append(answer);
+      }
+      for (const text of older ? connections : connections.slice(0, 1)) paragraph(text);
+      button('Choose a challenge to replay', showChallenges);
+      button('Choose another region', showRegions);
+    };
+    const finishCurrent = () => {
+      if (!currentAttempt) return;
+      const challenge = currentAttempt.challenge;
+      saveAttempt();
+      progress = finishChallenge(progress, challenge);
+      try { localStorage.setItem(trainingStorageKey, JSON.stringify({ completed: progress.completed, entries, attempts })); } catch { /* The current session still works. */ }
+      if (progress.finished) {
+        replayMode = true;
+        showFinalDebrief();
+      } else launch(nextChallenge(progress)!);
+    };
+    const appendCommonDebrief = () => {
+      if (!currentAttempt) return;
+      const attempt = currentAttempt;
+      const turning = bestTrainingChange([attempt]);
+      paragraph(turning ? `★ Day ${turning.day}: try ${turning.choice.action}${turning.choice.oxygen ? ` and ${turning.choice.oxygen} kg oxygen` : ''}.` : '★ You did well! No single change improved this challenge.');
+      if (getPlayerProfile().ageRange === '10-12') {
+        const cards = document.createElement('div'); cards.className = 'survival-day-cards';
+        const detail = document.createElement('section'); detail.setAttribute('aria-label', 'Day details');
+        const records = entries.filter(entry => entry.challenge === attempt.challenge).slice(-attempt.choices.length);
+        for (const [index, entry] of records.entries()) {
+          const card = document.createElement('button'); card.type = 'button'; card.textContent = `Day ${entry.day} · ${entry.changes}`;
+          card.addEventListener('click', () => {
+            detail.replaceChildren();
+            for (const [q, a] of [['What did I do?', entry.description], ['What did it cost?', `${entry.energyUsed} kWh for this choice.`], ['What happened later?', records[index + 1] ? `Day ${records[index + 1].day}: ${records[index + 1].changes}` : 'There was no later recorded day in this challenge.'], ['What could I try?', turning?.day === entry.day ? `Try ${turning.choice.action}.` : 'Try another choice and compare the result.']]) {
+              const h = document.createElement('h3'); h.textContent = q; const p = document.createElement('p'); p.textContent = a; detail.append(h, p);
+            }
+          }); cards.append(card);
+        }
+        panel.append(cards, detail);
+      }
+      button(replayMode ? 'Finish replay' : 'Next challenge', finishCurrent);
+    };
     let chapterLog: readonly DecisionLogEntry[] = [];
     const showIntoTheDark = () => {
+      beginAttempt('Into the dark');
       let challengeState = startIntoTheDark();
       const previousLog = chapterLog;
       const render = (showResult = false) => {
         heading(intoTheDark.title);
+        progressStrip('Into the dark');
         const layout = document.createElement('div');
         layout.className = 'survival-challenge-layout';
         const sidebarHost = document.createElement('div');
@@ -140,7 +251,7 @@ export class SurvivalScene extends ChapterScene {
               const tryTurning = document.createElement('button');
               tryTurning.type = 'button';
               tryTurning.textContent = `Try this idea from day ${turning.day}`;
-              tryTurning.addEventListener('click', () => { challengeState = replayToMorning(challengeState.history, turning.day); chapterLog = [...previousLog, ...challengeState.log]; render(); });
+              tryTurning.addEventListener('click', () => { challengeState = replayToMorning(challengeState.history, turning.day); chapterLog = [...previousLog, ...challengeState.log]; if (currentAttempt) { entries = entries.slice(0, entries.length - currentAttempt.choices.length + turning.day - 1); currentAttempt = { ...currentAttempt, choices: currentAttempt.choices.slice(0, turning.day - 1) }; } render(); });
               content.append(tryTurning);
             } else addText('p', '★ You did well! No single change improved this replay.');
             if (getPlayerProfile().ageRange === '10-12') {
@@ -174,18 +285,18 @@ export class SurvivalScene extends ChapterScene {
               const retry = document.createElement('button');
               retry.type = 'button';
               retry.textContent = `Try again from day ${result.day}`;
-              retry.addEventListener('click', () => { challengeState = replayToMorning(challengeState.history, result.day); chapterLog = [...previousLog, ...challengeState.log]; render(); });
+              retry.addEventListener('click', () => { challengeState = replayToMorning(challengeState.history, result.day); chapterLog = [...previousLog, ...challengeState.log]; if (currentAttempt) { entries = entries.slice(0, entries.length - currentAttempt.choices.length + result.day - 1); currentAttempt = { ...currentAttempt, choices: currentAttempt.choices.slice(0, result.day - 1) }; } render(); });
               content.append(retry);
               const onward = document.createElement('button');
               onward.type = 'button';
               onward.textContent = 'Go on to the next challenge anyway';
-              onward.addEventListener('click', showChallenges);
+              onward.addEventListener('click', finishCurrent);
               content.append(onward);
             } else {
               const back = document.createElement('button');
               back.type = 'button';
-              back.textContent = 'Back to challenges';
-              back.addEventListener('click', showChallenges);
+              back.textContent = replayMode ? 'Back to challenges' : 'Next challenge';
+              back.addEventListener('click', replayMode ? showChallenges : finishCurrent);
               content.append(back);
             }
           } else {
@@ -219,7 +330,9 @@ export class SurvivalScene extends ChapterScene {
             choice.textContent = `${action.title} · +${action.science} science · ${action.energy} kWh`;
             choice.dataset.action = action.id;
             choice.addEventListener('click', () => {
+              const before = challengeState;
               challengeState = advanceIntoTheDark(challengeState, { oxygenKg: Number(oxygen.value), action: action.id });
+              record(action.id, Number(oxygen.value), action.energy + Number(oxygen.value) * chapter5Facts['lifeSupport.oxygenEnergyModel'].value, `${action.title}, ${oxygen.value} kg oxygen`, `Energy ${before.energy} → ${challengeState.energy} kWh; air ${before.air} → ${challengeState.air} kg.`, action.science, challengeState.energy, settings.startingEnergy);
               chapterLog = [...previousLog, ...challengeState.log];
               render(true);
             });
@@ -228,39 +341,7 @@ export class SurvivalScene extends ChapterScene {
         }
         layout.append(sidebarHost, content);
         panel.append(layout);
-        const logButton = document.createElement('button');
-        logButton.type = 'button';
-        logButton.className = 'survival-log-button';
-        logButton.textContent = '💡 Log';
-        logButton.setAttribute('aria-expanded', 'false');
-        const logPanel = document.createElement('section');
-        logPanel.className = 'survival-log';
-        logPanel.setAttribute('aria-label', 'Decision log');
-        logPanel.hidden = true;
-        const logTitle = document.createElement('h2');
-        logTitle.textContent = 'Decision log';
-        logPanel.append(logTitle);
-        const list = document.createElement('ol');
-        const older = getPlayerProfile().ageRange === '10-12';
-        for (const entry of [...chapterLog].reverse()) {
-          const line = document.createElement('li');
-          const links = entry.links.map(link => ` ↳ Day ${link.day}: low energy`).join('');
-          line.textContent = older
-            ? `${entry.challenge} · Day ${entry.day} 🧪 ${entry.actionName} +${entry.science} science ↳ 🔋 ${entry.actionEnergy} kWh; 🫁 +${entry.decision.oxygenKg} kg ↳ ⚡ ${entry.oxygenEnergy} kWh because the action and oxygen machine use energy.${links}`
-            : `Day ${entry.day} 🧪 ${entry.actionName} ↳ ⚡ 🫁. Your choices used energy.${links}`;
-          list.append(line);
-        }
-        if (!chapterLog.length) {
-          const empty = document.createElement('p');
-          empty.textContent = 'Your decisions will appear here.';
-          logPanel.append(empty);
-        }
-        logPanel.append(list);
-        logButton.addEventListener('click', () => {
-          logPanel.hidden = !logPanel.hidden;
-          logButton.setAttribute('aria-expanded', String(!logPanel.hidden));
-        });
-        panel.append(logButton, logPanel);
+        appendTrainingLog();
         const sources = document.createElement('div');
         sources.className = 'survival-challenge-sources';
         sources.append(factElement('lifeSupport.oxygenPerDay'), factElement('lifeSupport.oxygenEnergyModel'), factElement('power.emptyBaseHeating'), factElement('power.darkSpells'));
@@ -276,6 +357,7 @@ export class SurvivalScene extends ChapterScene {
       let cargo: Cargo = 'shelter';
       const renderPlanning = () => {
         heading('Plan Storm alert');
+        progressStrip('Storm alert');
         paragraph('A what-if: NASA picks dates for other reasons.');
         paragraph('Choose the Sun:');
         for (const choice of ['busy', 'quiet'] as const) {
@@ -296,9 +378,11 @@ export class SurvivalScene extends ChapterScene {
         paragraph(`Archive source references: ${stormArchive.sourceKeys.join(', ')}.`);
         if (plan.region === 'mons-mouton') paragraph('Mons Mouton has challenging ground, so in this training the walk back adds 20% of the storm dose instead of 10%.');
         button('Start Storm alert', () => {
+          beginAttempt('Storm alert', plan);
           let state = startStormAlert(plan);
           const renderDay = () => {
             heading('Storm alert');
+            progressStrip('Storm alert'); appendTrainingLog();
             const host = document.createElement('div');
             renderSidebar(host, stormAlert.gauges, {
               energy: { value: state.base.energy, capacity: settings.startingEnergy },
@@ -312,6 +396,7 @@ export class SurvivalScene extends ChapterScene {
               paragraph(state.ending ?? '');
               paragraph(`Debrief: planned cosmic dose ${estimate.cosmic} mSv; simulated dose ${state.totalDose} mSv because daily cosmic rays and estimated storm doses accumulated.${state.unknownDose ? ' Some event doses were unknown, so the total is incomplete.' : ''}`);
               if (state.safetyPraise) paragraph('With the information you had, keeping the crew safe was a smart choice. It cost one day of science.');
+              appendCommonDebrief();
               button('Back to challenges', showChallenges);
               return;
             }
@@ -331,7 +416,7 @@ export class SurvivalScene extends ChapterScene {
               ...(!state.built ? [{ id: 'build' as const, title: 'Build the shelter' }] : []),
               ...(warnings.length ? [{ id: 'shelter' as const, title: 'Take shelter' }] : []),
             ];
-            for (const action of actions) button(action.title, () => { state = advanceStormAlert(state, Number(select.value), action.id); renderDay(); });
+            for (const action of actions) button(action.title, () => { const before = state; const oxygen = Number(select.value); state = advanceStormAlert(state, oxygen, action.id); const expense = action.id === 'lab' ? settings.labScienceCost : action.id === 'moonwalk' ? settings.moonwalkCost : 0; record(action.id, oxygen, expense + oxygen * chapter5Facts['lifeSupport.oxygenEnergyModel'].value, action.title, `Energy ${before.base.energy} → ${state.base.energy} kWh; air ${before.base.air} → ${state.base.air} kg.`, state.science - before.science, state.base.energy, settings.startingEnergy); renderDay(); });
           };
           renderDay();
         });
@@ -341,9 +426,11 @@ export class SurvivalScene extends ChapterScene {
     };
     const showContact = () => {
       const region = this.state.chosenRegion ?? 'haworth';
+      beginAttempt('Can you hear us?');
       let state = startContact(region, settings.stormChallengeSeed);
       const render = () => {
         heading(canYouHearUs.title);
+        progressStrip('Can you hear us?'); appendTrainingLog();
         const timeline = document.createElement('ol');
         timeline.className = 'survival-light-timeline';
         timeline.setAttribute('aria-label', 'Earth contact timeline');
@@ -369,6 +456,7 @@ export class SurvivalScene extends ChapterScene {
           paragraph(state.ending === 'complete' ? 'Challenge complete!' : 'Mission ended early: the crew flew home safely.');
           paragraph(`Data sent to Earth: ${state.sent}. ${state.sent === 0 ? 'Your science stayed on the Moon.' : state.sent >= settings.scienceGoal ? 'Science goal reached!' : 'Some science did not reach Earth.'}`);
           if (state.unknownDose) paragraph('Some particle-event doses were unknown, so the dose total is incomplete.');
+          appendCommonDebrief();
           button('Back to challenges', showChallenges);
           return;
         }
@@ -383,7 +471,7 @@ export class SurvivalScene extends ChapterScene {
           { id: 'rest', label: 'Rest', available: true },
         ];
         for (const action of actions) {
-          const item = button(action.label, () => { state = advanceContact(state, action.id); render(); });
+          const item = button(action.label, () => { const before = state; state = advanceContact(state, action.id); const expense = action.id === 'lab' ? settings.labScienceCost : action.id === 'send' ? settings.sendDataCost : action.id === 'relay' ? settings.relayBookingCost : 0; record(action.id, 0, expense, action.label, `Energy ${before.energy} → ${state.energy} kWh; data sent ${before.sent} → ${state.sent}.`, state.sent - before.sent, state.energy, settings.contactStartingEnergy); render(); });
           item.disabled = !action.available;
         }
         panel.append(factElement('communication.poleHillsBlock'), factElement('communication.relaySatellites'), factElement('communication.radioDelay'));
@@ -393,9 +481,11 @@ export class SurvivalScene extends ChapterScene {
       render();
     };
     const showFreshFood = () => {
+      beginAttempt('Fresh food');
       let state = startFreshFood();
       const render = () => {
         heading(freshFood.title);
+        progressStrip('Fresh food'); appendTrainingLog();
         const sidebar = document.createElement('div');
         renderSidebar(sidebar, freshFood.gauges, {
           food: { value: state.food, capacity: settings.foodStartingSupply + settings.foodDeliveryAmount },
@@ -408,22 +498,25 @@ export class SurvivalScene extends ChapterScene {
           paragraph(state.ending === 'complete' ? 'Challenge complete!' : state.ending === 'food' ? 'Mission ended early: the crew flew home safely before the food ran out.' : `Mission ended early: the crew flew home safely because ${state.ending} ran low.`);
           paragraph(`Debrief: the plants grew ${Number((state.freshGrown * 1000).toFixed(1))} g, while the crew used ${state.crewAte} kg of packed food, because the small plant box produces only a little food for the energy it uses.`);
           if (getPlayerProfile().ageRange === '10-12') panel.append(factElement('food.cropAreaFullDiet'));
+          appendCommonDebrief();
           button('Back to challenges', showChallenges);
           return;
         }
         paragraph(`Day ${state.day} of ${freshFood.lengthDays}. Cargo was expected on day ${settings.foodExpectedDeliveryDay} and will be one day late.`);
         paragraph(`Grow lamps: ${settings.plantArea} m² × ${chapter5Facts['food.plantPower'].value} kW/m² × ${settings.lampHours} hours = ${freshFood.lampEnergy} kWh. The low estimate is ${chapter5Facts['food.gramsPerKwh'].range[0]} g per kWh.`);
         const choices: { id: FoodAction; title: string }[] = [{ id: 'lamps', title: 'Run the grow lamps' }, { id: 'rest', title: 'Rest' }];
-        for (const choice of choices) button(choice.title, () => { state = advanceFreshFood(state, choice.id); render(); });
+        for (const choice of choices) button(choice.title, () => { const before = state; state = advanceFreshFood(state, choice.id); record(choice.id, 0, choice.id === 'lamps' ? freshFood.lampEnergy : 0, choice.title, `Energy ${before.energy} → ${state.energy} kWh; food ${before.food} → ${state.food} kg.`, state.science - before.science, state.energy, settings.foodStartingEnergy); render(); });
         panel.append(factElement('food.allFoodFromEarth'), factElement('food.veggie'), factElement('food.leaf'), factElement('food.packedFoodPerDay'), factElement('food.plantPower'), factElement('food.gramsPerKwh'), factElement('food.plantWater'));
       };
       render();
     };
     const showIceToAir = () => {
       const region = this.state.chosenRegion ?? 'haworth';
+      beginAttempt('Ice to air');
       let state = startIceToAir(region, settings.stormChallengeSeed);
       const render = () => {
         heading(iceToAir.title);
+        progressStrip('Ice to air'); appendTrainingLog();
         const timeline = document.createElement('ol');
         timeline.className = 'survival-light-timeline';
         timeline.setAttribute('aria-label', 'Example light pattern');
@@ -443,6 +536,7 @@ export class SurvivalScene extends ChapterScene {
         if (state.ending) {
           paragraph(state.ending === 'complete' ? 'Challenge complete!' : 'Mission ended early: the crew flew home safely.');
           if (state.unknownDose) paragraph('Some event doses were unknown, so the dose total is incomplete.');
+          appendCommonDebrief();
           button('Back to challenges', showChallenges);
           return;
         }
@@ -458,23 +552,30 @@ export class SurvivalScene extends ChapterScene {
           { id: 'lab', title: 'Lab science' }, { id: 'rest', title: 'Rest' },
         ];
         for (const action of actions) {
-          const item = button(action.title, () => { state = advanceIceToAir(state, action.id); render(); });
+          const item = button(action.title, () => { const before = state; state = advanceIceToAir(state, action.id); const expense = action.id === 'dig' ? settings.moonwalkCost : action.id === 'split' ? iceToAir.energyPerBatch : action.id === 'lab' ? settings.labScienceCost : 0; record(action.id, 0, expense, action.title, `Energy ${before.energy} → ${state.energy} kWh; air ${before.air} → ${state.air} kg.`, state.science - before.science, state.energy, settings.iceStartingEnergy); render(); });
           if (action.id === 'split') item.disabled = state.ice < iceToAir.waterPerBatch;
         }
         panel.append(factElement('moonPlaces.iceUses'), factElement('lifeSupport.splitWater'), factElement('lifeSupport.oxygenEnergyMinimum'), factElement('lifeSupport.oxygenEnergyModel'));
       };
       render();
     };
+    const launch = (name: TrainingChallenge) => {
+      if (name === 'Into the dark') showIntoTheDark();
+      else if (name === 'Storm alert') showStormPlanning();
+      else if (name === 'Can you hear us?') showContact();
+      else if (name === 'Fresh food') showFreshFood();
+      else showIceToAir();
+    };
     const showChallenges = () => {
       heading('Choose a training challenge');
       const region = regions.find((entry) => entry.id === this.state.chosenRegion);
       paragraph(`Chosen region: ${region?.name}`);
-      paragraph('Choose your first resource challenge.');
-      button('Begin Into the dark', showIntoTheDark);
-      button('Begin Storm alert', showStormPlanning);
-      button('Begin Can you hear us?', showContact);
-      button('Begin Fresh food', showFreshFood);
-      button('Begin Ice to air', showIceToAir);
+      paragraph(replayMode ? 'Choose a challenge to replay.' : 'Complete your training in order.');
+      const next = nextChallenge(progress);
+      for (const name of trainingOrder) {
+        if (replayMode || name === next) button(`Begin ${name}`, () => launch(name));
+        else paragraph(`${name} · ${progress.completed.includes(name) ? 'Complete' : 'Coming next'}`);
+      }
       button('Back to regions', showRegions);
     };
     const showRegions = () => {

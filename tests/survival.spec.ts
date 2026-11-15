@@ -5,7 +5,62 @@ import { regions } from '../src/data/chapter5/regions';
 import { chapter5Facts } from '../src/data/chapter5/facts';
 import { LABEL_WORDS } from '../src/facts/types';
 
+for (const age of ['7-9', '10-12'] as const) {
+  test(`first training follows all five challenges and reaches the final debrief for ${age}`, async ({ page }) => {
+    test.setTimeout(120_000);
+    if (age === '7-9') await page.addInitScript(() => { Storage.prototype.setItem = () => { throw new Error('Storage disabled'); }; });
+    await enterDirectory(page, age);
+    await page.locator('[data-chapter="survival"]').click();
+    await page.getByRole('button', { name: 'Near the south pole' }).click();
+    await page.getByRole('button', { name: 'Choose Haworth' }).click();
+    await expect(page.getByRole('button', { name: 'Begin Storm alert' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Begin Into the dark' }).click();
+    await expect(page.getByRole('navigation', { name: 'Training progress' })).toContainText('Ice to air');
+    for (let day = 1; day <= 6; day++) {
+      await page.getByRole('combobox', { name: 'Make oxygen today (kg)' }).selectOption(day >= 5 ? '1' : '0');
+      await page.locator(`[data-action="${day === 1 ? 'lab' : day >= 5 ? 'moonwalk' : 'rest'}"]`).click();
+      if (day < 6) await page.getByRole('button', { name: `Continue to day ${day + 1}` }).click();
+    }
+    await page.getByRole('button', { name: 'Next challenge' }).click();
+    await expect(page.getByRole('heading', { name: 'Plan Storm alert' })).toBeVisible();
+    await page.getByRole('button', { name: 'Quiet Sun' }).click();
+    await page.getByRole('button', { name: 'Start Storm alert' }).click();
+    for (let day = 1; day <= 6; day++) {
+      await page.getByRole('combobox', { name: 'Make oxygen today (kg)' }).selectOption(day >= 5 ? '1' : '0');
+      await page.getByRole('button', { name: 'Rest', exact: true }).click();
+    }
+    await page.getByRole('button', { name: 'Next challenge' }).click();
+    for (let day = 1; day <= 5; day++) await page.getByRole('button', { name: /Lab science/ }).click();
+    await page.getByRole('button', { name: /Send data/ }).click();
+    await page.getByRole('button', { name: 'Next challenge' }).click();
+    for (let day = 1; day <= 6; day++) await page.getByRole('button', { name: day <= 3 ? 'Run the grow lamps' : 'Rest', exact: true }).click();
+    await page.getByRole('button', { name: 'Next challenge' }).click();
+    for (const action of ['Dig ice', 'Melt and split', 'Rest', 'Rest', 'Melt and split', 'Rest']) await page.getByRole('button', { name: action, exact: true }).click();
+    await page.getByRole('button', { name: 'Next challenge' }).click();
+    await expect(page.getByRole('heading', { name: 'Training debrief' })).toBeVisible();
+    await expect(page.getByText('Science used energy.')).toBeVisible();
+    if (age === '10-12') {
+      await expect(page.getByText('Energy makes oxygen.')).toBeVisible();
+      await page.getByRole('button', { name: '🔋' }).click();
+      await expect(page.getByText(/Your recorded result:/)).toBeVisible();
+    } else await expect(page.getByRole('button', { name: '🔋' })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Choose a challenge to replay' }).click();
+    await expect(page.getByRole('button', { name: 'Begin Fresh food' })).toBeVisible();
+    if (age === '10-12') {
+      await page.reload();
+      await page.getByRole('button', { name: 'Skip' }).click();
+      await page.locator(`input[name="ageRange"][value="${age}"]`).check();
+      await page.getByRole('button', { name: 'Continue to missions' }).click();
+      await page.locator('[data-chapter="survival"]').click();
+      await page.getByRole('button', { name: 'Near the south pole' }).click();
+      await page.getByRole('button', { name: 'Choose Haworth' }).click();
+      await expect(page.getByRole('button', { name: 'Begin Ice to air' })).toBeVisible();
+    }
+  });
+}
+
 test('Ice to air digs and splits oxygen through a six-day challenge', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
   await enterDirectory(page, '10-12');
   await page.locator('[data-chapter="survival"]').click();
   await page.getByRole('button', { name: 'Near the south pole' }).click();
@@ -21,6 +76,7 @@ test('Ice to air digs and splits oxygen through a six-day challenge', async ({ p
 });
 
 test('Fresh food compares the plant harvest with the crew food use', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
   await enterDirectory(page, '10-12');
   await page.locator('[data-chapter="survival"]').click();
   await page.getByRole('button', { name: 'Near the south pole' }).click();
@@ -36,6 +92,7 @@ test('Fresh food compares the plant harvest with the crew food use', async ({ pa
 });
 
 test('Can you hear us sends science on a contact day', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
   await enterDirectory(page, '10-12');
   await page.locator('[data-chapter="survival"]').click();
   await page.getByRole('button', { name: 'Near the south pole' }).click();
@@ -50,6 +107,7 @@ test('Can you hear us sends science on a contact day', async ({ page }) => {
 });
 
 test('Storm alert planning and quiet challenge reach the debrief', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
   await enterDirectory(page, '10-12');
   await page.locator('[data-chapter="survival"]').click();
   await page.getByRole('button', { name: 'Near the south pole' }).click();
@@ -137,6 +195,7 @@ for (const age of ['7-9', '10-12'] as const) {
     await expect(page.getByRole('heading', { name: 'Day 1 results' })).toBeVisible();
   });
   test(`Into the dark plays six days and reaches the debrief for age ${age}`, async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
     await enterDirectory(page, age);
     await page.locator('[data-chapter="survival"]').click();
     await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
