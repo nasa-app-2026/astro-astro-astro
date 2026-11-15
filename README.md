@@ -18,6 +18,8 @@ In other shells, use `npm` in place of `npm.cmd`.
 
 ## Project map
 
+- [Credits and sources](CREDITS.md) - media, data, and code-library credits.
+
 - `data/challenge.md` — challenge requirements.
 - `data/chapter.md` — seven mission outlines across five stages.
 - `data/recources.md` — resource and decision design notes.
