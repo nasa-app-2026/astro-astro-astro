@@ -53,6 +53,7 @@ test('operate the crane and excavator to build the outpost, then return to missi
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'building');
   await expect(page.locator('[data-mission-panel="building"]')).toBeVisible();
   await expect(page.locator('#game-container canvas')).toHaveAttribute('data-building-background', 'earth');
+  await expect(page.locator('#game-container canvas')).toHaveScreenshot('building-clean-background.png');
   for (const component of [
     '#earth-background',
     '#crane-boom',

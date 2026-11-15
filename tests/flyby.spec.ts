@@ -7,11 +7,12 @@ test('pilot the rocket from the launch pad and watch its live camera move', asyn
   await enterDirectory(page);
   await openMission(page, 'flyby');
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'flyby');
+  await expect(page.locator('#game-container canvas')).toHaveScreenshot('flyby-clean-background.png');
   await expect(page.getByRole('img', { name: /rocket camera showing earth, moon, .*ship position/i })).toBeVisible();
   await expect(page.locator('#flyby-ship')).toBeVisible();
   await expect(page.locator('#flyby-ship text')).toHaveText('SURVEY • 01');
-  expect(Number(await page.locator('#flyby-earth > circle').getAttribute('r'))).toBe(60);
-  expect(Number(await page.locator('#flyby-moon > circle').getAttribute('r'))).toBe(20);
+  expect(Number(await page.locator('#flyby-earth > circle').first().getAttribute('r'))).toBe(60);
+  expect(Number(await page.locator('#flyby-moon > circle').first().getAttribute('r'))).toBe(20);
   const missionGrid = await page.locator('.flyby-panel .mission-grid').boundingBox();
   const camera = await page.locator('.flyby-panel .camera').boundingBox();
   const telemetry = await page.locator('.flyby-panel .telemetry').boundingBox();

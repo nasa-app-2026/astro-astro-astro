@@ -2,6 +2,13 @@ import { openMission } from './helpers/onboarding';
 import { expect, test } from '@playwright/test';
 import { enterDirectory } from './helpers/onboarding';
 
+test('Robots go first opens over a clean chapter background', async ({ page }) => {
+  await enterDirectory(page);
+  await openMission(page, 'robots');
+  await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'robots');
+  await expect(page.locator('#game-container canvas')).toHaveScreenshot('robots-clean-background.png');
+});
+
 test('choose a lunar site, pilot the cargo rocket with natural arrow directions, and return home', async ({ page }) => {
   test.setTimeout(60_000);
   await enterDirectory(page);

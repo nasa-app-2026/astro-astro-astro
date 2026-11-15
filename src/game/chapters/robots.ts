@@ -146,6 +146,10 @@ export class RobotsScene extends ChapterScene {
     const chapterView = document.getElementById('chapter-view');
     if (!chapterView) return;
 
+    // The rover game is rendered in HTML, so discard the shared Phaser
+    // placeholder frame that would otherwise show through behind it.
+    this.children.removeAll(true);
+
     this.roverState = restartRoverMission();
     Object.assign(this.cargoControls, cargoControlsTemplate);
     Object.assign(this.roverControls, roverControlsTemplate);

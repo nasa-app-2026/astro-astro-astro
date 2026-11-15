@@ -110,6 +110,10 @@ export class FlybyScene extends ChapterScene {
     const chapterView = document.getElementById('chapter-view');
     if (!chapterView) return;
 
+    // Flyby's playable interface is rendered in HTML. Remove the shared Phaser
+    // title/summary placeholder so it cannot remain visible behind that panel.
+    this.children.removeAll(true);
+
     this.flightState = { ...initialFlybyState, path: [] };
     Object.assign(this.heldControls, controlsTemplate);
     this.lastFlightRender = 0;

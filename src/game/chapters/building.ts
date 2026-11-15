@@ -32,6 +32,9 @@ export class BuildingScene extends ChapterScene {
   protected createMission(): void {
     const chapterView = document.getElementById('chapter-view');
     if (!chapterView) throw new Error('Chapter view is required to build the lunar outpost.');
+    // Keep this chapter's intentional Earth backdrop, but remove the shared
+    // title and placeholder panel that would otherwise show behind the game.
+    this.children.removeAll(true);
     this.drawEarthBackdrop();
 
     let state = createBuildingState();
