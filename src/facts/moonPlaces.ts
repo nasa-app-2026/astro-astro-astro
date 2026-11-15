@@ -1,4 +1,4 @@
-import type { Fact } from '../types';
+import type { Fact } from './types';
 
 export const moonPlaces = {
   gravity: {
