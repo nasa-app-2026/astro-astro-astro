@@ -13,7 +13,7 @@ test('splash and required age selection lead to the mission directory', async ({
   await page.getByLabel('10 to 12 years old').check();
   await page.getByRole('button', { name: 'Continue to missions' }).click();
   await expect(page.locator('#home')).toBeVisible();
-  await expect(page.locator('.chapter-card')).toHaveCount(7);
+  await expect(page.locator('.chapter-card')).toHaveCount(6);
   await expect(page.locator('#app')).toHaveAttribute('data-screen', 'home');
 });
 

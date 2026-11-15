@@ -3,6 +3,7 @@ import { chapters, type ChapterInfo } from './game/chapters/catalog';
 import { missionDirectory } from './missionDirectory';
 import { setAgeRange, type AgeRange } from './playerProfile';
 import { SplashGate } from './splashGate';
+import { mountDataSourcesScreen } from './dataSources/DataSourcesScreen';
 
 function chapterButton(chapter: ChapterInfo, accessibleName: string, open: (chapter: ChapterInfo) => void): HTMLButtonElement {
   const button = document.createElement('button');
@@ -32,9 +33,10 @@ function boot(): void {
       <main id="splash-screen" class="onboarding-screen"><h1 class="visually-hidden">Junior Astronaut Mission Trainer</h1><button id="splash-skip" class="splash-skip" type="button">Skip</button></main>
       <main id="age-screen" class="onboarding-screen" hidden><form id="age-form" class="onboarding-card"><h1>Choose your age range</h1><p>This helps us show the right explanations during your missions.</p><fieldset><legend>How old are you?</legend><label><input type="radio" name="ageRange" value="7-9" required> 7 to 9 years old</label><label><input type="radio" name="ageRange" value="10-12"> 10 to 12 years old</label></fieldset><button type="submit">Continue to missions</button></form></main>
       <main id="home" hidden>
-        <section class="missions" id="missions" aria-labelledby="missions-title"><div class="section-heading"><div><p class="eyebrow">BUILD A HOME ON THE MOON</p><h1 id="missions-title">Pick your next mission</h1></div><p>Start anywhere. Every mission is open.</p></div><div class="chapter-grid" id="chapter-grid"></div></section>
+        <section class="missions" id="missions" aria-labelledby="missions-title"><div class="section-heading"><div><p class="eyebrow">BUILD A HOME ON THE MOON</p><h1 id="missions-title">Pick your next mission</h1></div><p>Start anywhere. Every mission is open.</p></div><div class="chapter-grid" id="chapter-grid"></div><button id="data-sources-button" class="data-sources-button" type="button">Where our data comes from <span aria-hidden="true">→</span></button></section>
       </main>
       <main id="mission-info" hidden aria-labelledby="info-title"></main>
+      <main id="data-sources-view" hidden aria-label="Where our data comes from"></main>
       <main id="chapter-view" hidden><div class="chapter-toolbar"><button id="back-button" type="button">← All missions</button><span id="chapter-label"></span></div></main>
     </div>`;
 
@@ -42,6 +44,7 @@ function boot(): void {
   const ageScreen = app.querySelector<HTMLElement>('#age-screen')!;
   const home = app.querySelector<HTMLElement>('#home')!;
   const infoView = app.querySelector<HTMLElement>('#mission-info')!;
+  const dataSourcesView = app.querySelector<HTMLElement>('#data-sources-view')!;
   const chapterView = app.querySelector<HTMLElement>('#chapter-view')!;
   const chapterLabel = app.querySelector<HTMLElement>('#chapter-label')!;
   const grid = app.querySelector<HTMLElement>('#chapter-grid')!;
@@ -94,6 +97,7 @@ function boot(): void {
 
   function open(chapter: ChapterInfo): void {
     infoView.hidden = true;
+    dataSourcesView.hidden = true;
     leaveCurrentScene();
     const lockMissionScroll = chapter.stage === 'Exploration' || chapter.stage === 'Establishing a presence';
     document.documentElement.classList.toggle('mission-no-scroll', lockMissionScroll);
@@ -125,6 +129,7 @@ function boot(): void {
   function returnToDirectory(): void {
     game.scene.start('menu');
     infoView.hidden = true;
+    dataSourcesView.hidden = true;
     home.hidden = false;
     app.dataset.screen = 'home';
     renderDirectory();
@@ -133,6 +138,19 @@ function boot(): void {
   function escapeHtml(value: string): string {
     return value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
   }
+
+  app.querySelector<HTMLButtonElement>('#data-sources-button')!.addEventListener('click', () => {
+    leaveCurrentScene();
+    document.documentElement.classList.remove('mission-no-scroll');
+    document.body.classList.remove('mission-no-scroll');
+    home.hidden = true;
+    infoView.hidden = true;
+    chapterView.hidden = true;
+    dataSourcesView.hidden = false;
+    app.dataset.screen = 'data-sources';
+    mountDataSourcesScreen(dataSourcesView, returnToDirectory);
+    window.scrollTo(0, 0);
+  });
 
   renderDirectory();
   app.querySelector<HTMLButtonElement>('#back-button')!.addEventListener('click', () => {
