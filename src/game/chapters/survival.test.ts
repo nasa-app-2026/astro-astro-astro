@@ -18,6 +18,46 @@ import { findTurningPoint } from '../../rules/chapter5/turning-point';
 import { stormArchive, stormArchiveSchema } from '../../data/chapter5/storms';
 import { dailyDose, scheduleAlerts, stormImpact } from '../../rules/chapter5/storms';
 import { advanceStormAlert, prediction, startStormAlert, type Plan } from '../../rules/chapter5/storm-alert';
+import { contactDays } from '../../data/chapter5/challenges/can-you-hear-us';
+import { advanceContact, contactWarning, startContact } from '../../rules/chapter5/can-you-hear-us';
+
+describe('Can you hear us?', () => {
+  it('uses the requested example contact counts per region', () => {
+    expect(contactDays('malapart-massif')).toHaveLength(5);
+    expect(contactDays('nobile-rim-2')).toHaveLength(2);
+    expect(contactDays('haworth')).toHaveLength(4);
+  });
+  it('sends science to Earth and keeps unsent science on the Moon', () => {
+    let sent = startContact('haworth', 42, []);
+    let unsent = startContact('haworth', 42, []);
+    for (let i = 0; i < 5; i++) {
+      sent = advanceContact(sent, 'lab');
+      unsent = advanceContact(unsent, 'lab');
+    }
+    sent = advanceContact(sent, 'send');
+    unsent = advanceContact(unsent, 'rest');
+    expect(sent).toMatchObject({ sent: 5, waiting: 0, ended: true });
+    expect(unsent).toMatchObject({ sent: 0, waiting: 5, ended: true });
+  });
+  it('books one relay for a blocked day and uses it only once', () => {
+    let state = startContact('nobile-rim-2', 42, []);
+    expect(() => advanceContact(state, 'send')).toThrow('No Earth contact');
+    state = advanceContact(state, 'relay');
+    state = advanceContact(state, 'lab');
+    state = advanceContact(state, 'send');
+    expect(state).toMatchObject({ sent: 1, relay: false });
+    expect(() => advanceContact(state, 'send')).toThrow('No Earth contact');
+  });
+  it('delivers warnings only with contact and records an unannounced blocked-day event', () => {
+    const alerts = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S2' as const }];
+    const blocked = startContact('nobile-rim-2', 42, alerts);
+    expect(contactWarning(blocked)).toBe(false);
+    expect(advanceContact(blocked, 'rest').message).toContain('We could not hear Mission Control today.');
+    expect(contactWarning(startContact('haworth', 42, alerts))).toBe(true);
+    const extreme = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S4' as const }];
+    expect(advanceContact(startContact('haworth', 42, extreme), 'rest').ending).toBe('space-weather');
+  });
+});
 
 describe('Storm alert planning and rules', () => {
   const plan: Plan = { sun: 'quiet', cargo: 'shelter', region: 'haworth', seed: 42 };

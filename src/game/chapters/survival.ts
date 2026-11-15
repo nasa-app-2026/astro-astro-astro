@@ -16,6 +16,8 @@ import { advanceStormAlert, prediction, startStormAlert, type Cargo, type Sun, t
 import { settings } from '../../data/chapter5/settings';
 import { archiveLabel } from '../../rules/chapter5/storms';
 import { stormArchive } from '../../data/chapter5/storms';
+import { canYouHearUs, contactDays } from '../../data/chapter5/challenges/can-you-hear-us';
+import { advanceContact, contactWarning, startContact, type ContactAction } from '../../rules/chapter5/can-you-hear-us';
 import './survival/site.css';
 
 export class SurvivalScene extends ChapterScene {
@@ -333,6 +335,59 @@ export class SurvivalScene extends ChapterScene {
       };
       renderPlanning();
     };
+    const showContact = () => {
+      const region = this.state.chosenRegion ?? 'haworth';
+      let state = startContact(region, settings.stormChallengeSeed);
+      const render = () => {
+        heading(canYouHearUs.title);
+        const timeline = document.createElement('ol');
+        timeline.className = 'survival-light-timeline';
+        timeline.setAttribute('aria-label', 'Earth contact timeline');
+        for (let day = 1; day <= canYouHearUs.lengthDays; day++) {
+          const item = document.createElement('li');
+          item.textContent = `Day ${day}: ${contactDays(region).includes(day) ? 'Earth in view' : 'blocked'}`;
+          timeline.append(item);
+        }
+        panel.append(timeline);
+        paragraph('An example, not a forecast.');
+        if (region === 'malapart-massif') paragraph('NASA says: exceptional Earth visibility. Five of six days is a training rule.');
+        else if (region === 'nobile-rim-2') paragraph('One study, at one spot: Earth is visible about one-third of the time.');
+        else paragraph('An example, not real data for this region.');
+        const sidebar = document.createElement('div');
+        renderSidebar(sidebar, canYouHearUs.gauges, {
+          data: { value: state.waiting, capacity: settings.scienceGoal },
+          energy: { value: state.energy, capacity: settings.contactStartingEnergy },
+          dose: { value: state.dose, capacity: chapter5Facts['radiation.careerLimit'].value },
+        }, state.sent, getPlayerProfile().ageRange, settings.crewCount);
+        panel.append(sidebar);
+        if (state.message) paragraph(state.message);
+        if (state.ended) {
+          paragraph(state.ending === 'complete' ? 'Challenge complete!' : 'Mission ended early: the crew flew home safely.');
+          paragraph(`Data sent to Earth: ${state.sent}. ${state.sent === 0 ? 'Your science stayed on the Moon.' : state.sent >= settings.scienceGoal ? 'Science goal reached!' : 'Some science did not reach Earth.'}`);
+          if (state.unknownDose) paragraph('Some particle-event doses were unknown, so the dose total is incomplete.');
+          button('Back to challenges', showChallenges);
+          return;
+        }
+        const inView = contactDays(region).includes(state.day);
+        paragraph(`Day ${state.day} of ${canYouHearUs.lengthDays}: ${inView ? 'Earth in view' : 'Earth blocked'}.`);
+        if (contactWarning(state)) paragraph(`Mission Control: space weather alert. Radio messages take about ${chapter5Facts['communication.radioDelay'].value} seconds each way.`);
+        if (state.relay) paragraph('One relay transmission is booked for a blocked day.');
+        const actions: { id: ContactAction; label: string; available: boolean }[] = [
+          { id: 'lab', label: `Lab science · +1 data · ${settings.labScienceCost} kWh`, available: true },
+          { id: 'send', label: `Send data · ${settings.sendDataCost} kWh`, available: inView || state.relay },
+          { id: 'relay', label: `Book relay time · ${settings.relayBookingCost} kWh`, available: !state.relay },
+          { id: 'rest', label: 'Rest', available: true },
+        ];
+        for (const action of actions) {
+          const item = button(action.label, () => { state = advanceContact(state, action.id); render(); });
+          item.disabled = !action.available;
+        }
+        panel.append(factElement('communication.poleHillsBlock'), factElement('communication.relaySatellites'), factElement('communication.radioDelay'));
+        if (region === 'malapart-massif') panel.append(factElement('moonPlaces.malpertEarthView'));
+        if (region === 'nobile-rim-2') panel.append(factElement('moonPlaces.nobileRim2EarthView'));
+      };
+      render();
+    };
     const showChallenges = () => {
       heading('Choose a training challenge');
       const region = regions.find((entry) => entry.id === this.state.chosenRegion);
@@ -340,6 +395,7 @@ export class SurvivalScene extends ChapterScene {
       paragraph('Choose your first resource challenge.');
       button('Begin Into the dark', showIntoTheDark);
       button('Begin Storm alert', showStormPlanning);
+      button('Begin Can you hear us?', showContact);
       button('Back to regions', showRegions);
     };
     const showRegions = () => {

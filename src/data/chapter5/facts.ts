@@ -35,6 +35,8 @@ export const chapter5Facts = Object.freeze({
   [moonPlaces.monsMouton.id]: moonPlaces.monsMouton,
   [moonPlaces.iceFriendlyGround.id]: moonPlaces.iceFriendlyGround,
   [communication.relaySatellites.id]: communication.relaySatellites,
+  [communication.poleHillsBlock.id]: communication.poleHillsBlock,
+  [communication.radioDelay.id]: communication.radioDelay,
   [food.packedFoodPerDay.id]: food.packedFoodPerDay,
   [food.plantPower.id]: food.plantPower,
   [food.plantWater.id]: food.plantWater,

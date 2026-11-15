@@ -31,4 +31,11 @@ export const settings = Object.freeze({
   moutonWalkBackDoseFraction: 0.2, // Game rule, made up for fun — longer walk back
   extraKitScience: 1, // Game rule, made up for fun — point per lab day
   stormChallengeSeed: 42, // Game rule, made up for fun — reproducible training schedule
+  contactDefault: [1, 2, 4, 6], // Game rule, made up for fun — example days
+  contactMalpert: [1, 2, 3, 4, 6], // Game rule, made up for fun — not a NASA measurement
+  contactNobile: [2, 6], // Game rule, made up for fun — one-third example
+  sendDataCost: 4, // Game rule, made up for fun — kWh
+  relayBookingCost: 8, // Game rule, made up for fun — kWh
+  contactDataPerLab: 1, // Game rule, made up for fun — point
+  contactStartingEnergy: 160, // Game rule, made up for fun — kWh for the communication challenge
 });

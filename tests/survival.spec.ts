@@ -5,6 +5,20 @@ import { regions } from '../src/data/chapter5/regions';
 import { chapter5Facts } from '../src/data/chapter5/facts';
 import { LABEL_WORDS } from '../src/facts/types';
 
+test('Can you hear us sends science on a contact day', async ({ page }) => {
+  await enterDirectory(page, '10-12');
+  await page.locator('[data-chapter="survival"]').click();
+  await page.getByRole('button', { name: 'Near the south pole' }).click();
+  await page.getByRole('button', { name: 'Choose Haworth' }).click();
+  await page.getByRole('button', { name: 'Begin Can you hear us?' }).click();
+  await expect(page.getByRole('list', { name: 'Earth contact timeline' })).toContainText('Day 6: Earth in view');
+  for (let day = 1; day <= 5; day++) await page.getByRole('button', { name: /Lab science/ }).click();
+  await page.getByRole('button', { name: /Send data/ }).click();
+  await expect(page.getByText(/Data sent to Earth: 5/)).toBeVisible();
+  await expect(page.getByText(/Science goal reached/)).toBeVisible();
+  await page.getByRole('button', { name: 'Back to challenges' }).click();
+});
+
 test('Storm alert planning and quiet challenge reach the debrief', async ({ page }) => {
   await enterDirectory(page, '10-12');
   await page.locator('[data-chapter="survival"]').click();
