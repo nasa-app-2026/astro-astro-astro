@@ -92,6 +92,9 @@ function boot(): void {
 
   function open(chapter: ChapterInfo): void {
     leaveCurrentScene();
+    const lockMissionScroll = chapter.stage === 'Exploration' || chapter.stage === 'Establishing a presence';
+    document.documentElement.classList.toggle('mission-no-scroll', lockMissionScroll);
+    document.body.classList.toggle('mission-no-scroll', lockMissionScroll);
     game.scene.start(chapter.id);
     chapterLabel.textContent = chapter.title;
     home.hidden = true;
@@ -104,6 +107,8 @@ function boot(): void {
   app.querySelector<HTMLButtonElement>('#back-button')!.addEventListener('click', () => {
     leaveCurrentScene();
     game.scene.start('menu');
+    document.documentElement.classList.remove('mission-no-scroll');
+    document.body.classList.remove('mission-no-scroll');
     chapterView.hidden = true;
     home.hidden = false;
     app.dataset.screen = 'home';

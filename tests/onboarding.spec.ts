@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('splash and required age selection lead to the mission directory', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#splash-screen h1')).toHaveText('Junior Astronaut Mission Trainer');
   await expect(page.locator('#splash-skip')).toBeVisible();
   await expect(page.locator('#home')).toBeHidden();
@@ -18,7 +18,7 @@ test('splash and required age selection lead to the mission directory', async ({
 });
 
 test('splash advances to age selection after three seconds', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#app')).toHaveAttribute('data-screen', 'splash');
   await expect(page.locator('#app')).toHaveAttribute('data-splash-ready', 'true');
   await expect(page.locator('#game-container canvas')).toBeVisible();
@@ -42,7 +42,7 @@ test('Skip works before image loading finishes and leaves only the menu scene', 
 
 test('splash Skip stays tappable on a narrow portrait screen', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 667 });
-  await page.goto('/');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
   await expect(page.locator('#app')).toHaveAttribute('data-splash-ready', 'true');
   const canvas = await page.locator('#game-container canvas').boundingBox();
   expect(canvas?.height).toBeGreaterThanOrEqual(667);
@@ -53,3 +53,4 @@ test('splash Skip stays tappable on a narrow portrait screen', async ({ page }) 
   await skip.click();
   await expect(page.getByRole('heading', { name: 'Choose your age range' })).toBeVisible();
 });
+

@@ -1,0 +1,481 @@
+html.mission-no-scroll,
+body.mission-no-scroll {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+html.mission-no-scroll {
+  scroll-behavior: auto;
+}
+
+body.mission-no-scroll #app,
+body.mission-no-scroll .shell {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body.mission-no-scroll #chapter-view {
+  position: relative;
+  height: calc(100vh - 82px);
+  height: calc(100dvh - 82px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mission-no-scroll .chapter-bottom {
+  display: none;
+}
+
+body.mission-no-scroll .flyby-panel,
+body.mission-no-scroll .rover-panel {
+  position: absolute;
+  top: 66px;
+  bottom: 8px;
+  left: 50%;
+  width: min(1000px, calc(100vw - 24px));
+  margin: 0;
+  padding: 10px 14px;
+  overflow: hidden;
+  transform: translateX(-50%);
+}
+
+body.mission-no-scroll .rover-panel {
+  width: min(1200px, calc(100vw - 24px));
+}
+
+body.mission-no-scroll .flyby-panel > div,
+body.mission-no-scroll .rover-panel > div {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto auto auto minmax(90px, 1fr) auto auto auto;
+  gap: 4px;
+}
+
+body.mission-no-scroll .rover-panel .cargo-flight-active {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+body.mission-no-scroll .rover-panel .rover-driving-active {
+  position: relative;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+body.mission-no-scroll .flyby-panel .eyebrow,
+body.mission-no-scroll .rover-panel .eyebrow {
+  font-size: 10px;
+}
+
+body.mission-no-scroll .flyby-panel h2,
+body.mission-no-scroll .rover-panel h2 {
+  margin: 0;
+  font-size: clamp(20px, 3vw, 28px);
+}
+
+body.mission-no-scroll .flyby-panel .intro,
+body.mission-no-scroll .rover-panel .intro {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+body.mission-no-scroll .flyby-panel > div > .note,
+body.mission-no-scroll .rover-panel > div > .note,
+body.mission-no-scroll .flyby-panel h3,
+body.mission-no-scroll .rover-panel h3 {
+  display: none;
+}
+
+body.mission-no-scroll .flyby-panel .mission-grid,
+body.mission-no-scroll .rover-panel .mission-grid {
+  min-height: 0;
+  height: 100%;
+  margin: 0;
+  gap: 6px;
+}
+
+body.mission-no-scroll .flyby-panel .mission-grid {
+  display: block;
+  position: relative;
+  min-height: 0;
+}
+
+body.mission-no-scroll .flyby-panel .flyby-flight-active {
+  grid-template-rows: minmax(0, 1fr) 5px auto;
+}
+
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .eyebrow,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > h2,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .intro,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .note,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > h3,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .science-list,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .message {
+  display: none;
+}
+
+body.mission-no-scroll .flyby-panel .camera {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+body.mission-no-scroll .flyby-panel .camera {
+  overflow: hidden;
+}
+
+body.mission-no-scroll .flyby-panel .first-person {
+  display: none;
+}
+
+body.mission-no-scroll .flyby-panel .telemetry {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  bottom: 8px;
+  left: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  background: #071827cf;
+  pointer-events: none;
+}
+
+body.mission-no-scroll .flyby-panel .camera-title,
+body.mission-no-scroll .rover-panel .view-title {
+  padding: 5px 7px;
+  font-size: 9px;
+}
+
+body.mission-no-scroll .flyby-panel .camera svg {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+body.mission-no-scroll .flyby-panel .stat {
+  min-width: 0;
+  padding: 2px 3px;
+}
+
+body.mission-no-scroll .flyby-panel .stat span {
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+body.mission-no-scroll .flyby-panel .stat strong {
+  margin-top: 1px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+body.mission-no-scroll .flyby-panel .first-person svg {
+  height: calc(100% - 24px);
+}
+
+body.mission-no-scroll .flyby-panel .stat,
+body.mission-no-scroll .rover-panel .stat {
+  min-width: 0;
+  padding: 5px;
+}
+
+body.mission-no-scroll .flyby-panel .stat span,
+body.mission-no-scroll .rover-panel .stat span {
+  font-size: 8px;
+}
+
+body.mission-no-scroll .flyby-panel .stat strong,
+body.mission-no-scroll .rover-panel .stat strong {
+  margin-top: 2px;
+  font-size: 14px;
+}
+
+body.mission-no-scroll .flyby-panel .progress,
+body.mission-no-scroll .rover-panel .progress {
+  height: 5px;
+  margin: 0;
+}
+
+body.mission-no-scroll .flyby-panel .science-list {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+}
+
+body.mission-no-scroll .flyby-panel .science-card,
+body.mission-no-scroll .rover-panel .job {
+  min-height: 28px;
+  padding: 4px 6px;
+  font-size: 10px;
+}
+
+body.mission-no-scroll .flyby-panel .message,
+body.mission-no-scroll .rover-panel .message {
+  min-height: 28px;
+  margin: 0;
+  padding: 5px 8px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+body.mission-no-scroll .flyby-panel .action-dock,
+body.mission-no-scroll .rover-panel .action-dock {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  width: min(760px, calc(100vw - 32px));
+  max-height: none;
+  overflow: hidden;
+  justify-self: center;
+  transform: none;
+  padding: 4px 8px;
+  border: 1px solid #47728a;
+  border-radius: 8px;
+  background: #081827f5;
+  box-shadow: none;
+}
+
+body.mission-no-scroll .flyby-panel .action-dock .controls,
+body.mission-no-scroll .rover-panel .action-dock .controls {
+  gap: 5px;
+  margin: 3px 0;
+}
+
+body.mission-no-scroll .flyby-panel .action-dock button,
+body.mission-no-scroll .rover-panel .action-dock button {
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+body.mission-no-scroll .flyby-panel .action-dock .key-hint,
+body.mission-no-scroll .rover-panel .action-dock .key-hint {
+  margin: 3px 0;
+  font-size: 9px;
+}
+
+body.mission-no-scroll .flyby-panel .action-dock .plan {
+  margin: 2px 0;
+  padding: 6px;
+  gap: 8px;
+}
+
+body.mission-no-scroll .flyby-panel .action-dock .plan label {
+  gap: 3px;
+  font-size: 11px;
+}
+
+body.mission-no-scroll .flyby-panel #flyby-instruments {
+  gap: 4px;
+}
+
+body.mission-no-scroll .flyby-panel #flyby-instruments button {
+  min-height: 30px;
+  padding: 4px;
+  font-size: 10px;
+}
+
+body.mission-no-scroll .flyby-panel .action-dock .plan input[type="range"] {
+  height: 14px;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view {
+  display: block;
+  min-height: 0;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .camera {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+body.mission-no-scroll .rover-panel .mission-grid {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view {
+  display: block;
+  position: relative;
+  min-height: 0;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .camera {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .camera svg {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .telemetry {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  bottom: 8px;
+  left: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  background: #071827cf;
+  pointer-events: none;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .stat {
+  min-width: 0;
+  padding: 2px 3px;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .stat span {
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .stat strong {
+  margin-top: 1px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+body.mission-no-scroll .rover-panel .telemetry {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: center;
+  gap: 4px;
+  padding: 6px;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view svg,
+body.mission-no-scroll .rover-panel #rover-surface-view .camera svg {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view .telemetry {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view .stat {
+  min-width: 0;
+  padding: 2px 3px;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view .stat span {
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view .stat strong {
+  margin-top: 1px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+body.mission-no-scroll .rover-panel #rover-jobs {
+  min-height: 0;
+}
+
+body.mission-no-scroll .rover-panel .jobs {
+  gap: 4px;
+  margin: 3px 0;
+}
+
+@media (max-width: 700px) {
+  body.mission-no-scroll #chapter-view {
+    height: calc(100vh - 82px);
+    height: calc(100dvh - 82px);
+  }
+
+  body.mission-no-scroll .flyby-panel,
+  body.mission-no-scroll .rover-panel {
+    width: calc(100vw - 24px);
+    padding: 8px;
+  }
+
+  body.mission-no-scroll .flyby-panel .action-dock,
+  body.mission-no-scroll .rover-panel .action-dock {
+    width: 100%;
+    padding: 3px;
+  }
+
+  body.mission-no-scroll .flyby-panel .mission-grid,
+  body.mission-no-scroll .rover-panel .mission-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+  }
+
+  body.mission-no-scroll .flyby-panel .science-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  body.mission-no-scroll .flyby-panel .telemetry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.mission-no-scroll .rover-panel #cargo-flight-view .telemetry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.mission-no-scroll .rover-panel #rover-surface-view .telemetry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-height: 650px) {
+  body.mission-no-scroll .flyby-panel .science-list {
+    display: none;
+  }
+
+  body.mission-no-scroll .flyby-panel > div,
+  body.mission-no-scroll .rover-panel > div {
+    grid-template-rows: auto auto auto minmax(80px, 1fr) auto auto;
+  }
+
+  body.mission-no-scroll .flyby-panel .mission-grid {
+    grid-template-rows: minmax(0, 1fr) 42px;
+  }
+
+  body.mission-no-scroll .flyby-panel .first-person {
+    display: none;
+  }
+
+  body.mission-no-scroll .rover-panel .telemetry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.mission-no-scroll .flyby-panel .telemetry {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px;
+    padding: 2px;
+  }
+
+  body.mission-no-scroll .flyby-panel .stat {
+    padding: 1px 2px;
+  }
+
+  body.mission-no-scroll .flyby-panel .stat span {
+    font-size: 6px;
+  }
+
+  body.mission-no-scroll .flyby-panel .stat strong {
+    margin-top: 1px;
+    font-size: 9px;
+  }
+}
+
+@media (max-height: 650px) and (max-width: 700px) {
+  body.mission-no-scroll .flyby-panel .telemetry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

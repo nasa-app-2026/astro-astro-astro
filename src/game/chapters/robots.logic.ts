@@ -24,6 +24,7 @@ export type RobotsState = {
   mappedTiles: string[];
   photos: string[];
   waterSampled: boolean;
+  parked: boolean;
   path: RoverPoint[];
   message: string;
 };
@@ -31,7 +32,7 @@ export type RobotsState = {
 export const CARGO_WORLD = {
   width: 1000,
   height: 600,
-  earth: { x: 100, y: 55 },
+  earth: { x: 100, y: 75 },
   moon: { x: 790, y: 330, radius: 22 },
   sites: {
     sunnyRidge: { x: 790, y: 405 },
@@ -45,6 +46,8 @@ export const CARGO_ASTEROIDS = [
   { x: 690, y: 455, radius: 15 },
 ] as const;
 
+export const ROVER_PARKING_AREA = { x: 12, y: 24, radius: 4.5 } as const;
+
 export const initialRobotsState: RobotsState = {
   phase: 'site-choice',
   site: null,
@@ -52,7 +55,7 @@ export const initialRobotsState: RobotsState = {
   y: CARGO_WORLD.earth.y + 64,
   vx: 0,
   vy: 0,
-  heading: Math.PI / 2,
+  heading: Math.atan2(CARGO_WORLD.moon.y - CARGO_WORLD.earth.y, CARGO_WORLD.moon.x - CARGO_WORLD.earth.x),
   fuel: 100,
   battery: 100,
   signal: 100,
@@ -60,6 +63,7 @@ export const initialRobotsState: RobotsState = {
   mappedTiles: [],
   photos: [],
   waterSampled: false,
+  parked: false,
   path: [],
   message: 'Choose a landing target for the uncrewed rover rocket.',
 };
@@ -67,9 +71,40 @@ export const initialRobotsState: RobotsState = {
 const distance = (a: RoverPoint, b: RoverPoint): number => Math.hypot(a.x - b.x, a.y - b.y);
 const tileAt = (x: number, y: number): string => `${Math.floor(x / 20)},${Math.floor(y / 20)}`;
 const inShadowCrater = (x: number, y: number): boolean => x >= 65 && y >= 60;
+const roverRoughnessAt = (site: RoverSite | null, x: number, y: number): number => {
+  if (inShadowCrater(x, y)) return site === ROVER_SITES.shadowedCrater ? 0.8 : 0.55;
+  if (site === ROVER_SITES.sunnyRidge && x >= 22 && x <= 48 && y <= 20) return 0.08;
+  return 0.28;
+};
 
-function isMissionComplete(state: RobotsState): boolean {
+function hasCompletedSurvey(state: RobotsState): boolean {
   return state.photos.length >= 3 && state.mappedTiles.length >= 5 && state.waterSampled;
+}
+
+function updateParkingStatus(state: RobotsState): RobotsState {
+  const parked = distance(state, ROVER_PARKING_AREA) <= ROVER_PARKING_AREA.radius;
+  if (parked && hasCompletedSurvey(state)) {
+    return {
+      ...state,
+      phase: 'complete',
+      parked: true,
+      message: 'Scout complete! The rover is parked safely by the lander with its photos, map, and water-ice sample ready for Earth.',
+    };
+  }
+  if (hasCompletedSurvey(state)) {
+    return {
+      ...state,
+      parked: false,
+      message: 'Survey complete! Drive the rover back to the marked parking pad by the lander to finish the mission.',
+    };
+  }
+  return {
+    ...state,
+    parked,
+    message: parked
+      ? 'Rover parked safely by the lander. Finish the survey, then return here to complete the mission.'
+      : state.message,
+  };
 }
 
 function updateMap(state: RobotsState, x: number, y: number): string[] {
@@ -100,40 +135,50 @@ export function launchRoverMission(state: RobotsState): RobotsState {
   };
 }
 
-export function stepCargoFlight(state: RobotsState, controls: CargoControls, deltaSeconds: number): RobotsState {
+function stepCargoFlightFrame(state: RobotsState, controls: CargoControls, deltaSeconds: number): RobotsState {
   if (state.phase !== 'transfer' && state.phase !== 'approach') return state;
-  const dt = Math.max(0, Math.min(deltaSeconds, 0.08));
+  const dt = Math.max(0, Math.min(deltaSeconds, 1 / 60));
   if (dt === 0) return state;
-  const horizontal = Number(controls.right) - Number(controls.left);
-  const vertical = Number(controls.up) - Number(controls.down);
-  const thrust = Math.abs(horizontal) + Math.abs(vertical);
+  let horizontal = Number(controls.right) - Number(controls.left);
+  let vertical = Number(controls.down) - Number(controls.up);
+  const thrust = Math.hypot(horizontal, vertical);
+  if (thrust > 1) {
+    horizontal /= thrust;
+    vertical /= thrust;
+  }
   const fuelScale = state.fuel <= 0 ? 0 : 0.18 + state.fuel / 100 * 0.82;
   let vx = state.vx + horizontal * 28 * fuelScale * dt;
   let vy = state.vy + vertical * 28 * fuelScale * dt;
 
-  if (state.x < 240 && state.y < 190) vy -= 8 * (1 - state.y / 220) * dt;
-  const dx = CARGO_WORLD.moon.x - state.x;
-  const dy = CARGO_WORLD.moon.y - state.y;
-  const moonDistance = Math.hypot(dx, dy);
-  if (moonDistance < 260 && moonDistance > CARGO_WORLD.moon.radius) {
-    const gravity = 12 * (260 - moonDistance) / 180;
-    vx += dx / moonDistance * gravity * dt;
-    vy += dy / moonDistance * gravity * dt;
-  }
-  const drag = Math.pow(0.998, dt * 60);
+  const addGravity = (body: { x: number; y: number }, radius: number, strength: number, range: number, cap: number): void => {
+    const dx = body.x - state.x;
+    const dy = body.y - state.y;
+    const r2 = dx * dx + dy * dy;
+    const r = Math.sqrt(r2);
+    if (r === 0 || r >= range) return;
+    const gravity = r < radius
+      ? cap * r / radius
+      : Math.min(cap, strength / Math.max(r2, radius * radius));
+    vx += dx / r * gravity * dt;
+    vy += dy / r * gravity * dt;
+  };
+  addGravity(CARGO_WORLD.earth, 75, 26000, 230, 4.5);
+  addGravity(CARGO_WORLD.moon, CARGO_WORLD.moon.radius, 8500, 260, 2.2);
+  const drag = Math.exp(-(thrust > 0 ? 0.06 : 1.3) * dt);
   vx *= drag;
   vy *= drag;
   const speed = Math.hypot(vx, vy);
-  const maxSpeed = 10 + state.fuel * 0.9;
+  const maxSpeed = 18 + state.fuel * 0.72;
   if (speed > maxSpeed) {
     vx = vx / speed * maxSpeed;
     vy = vy / speed * maxSpeed;
   }
   const x = Math.max(0, Math.min(CARGO_WORLD.width, state.x + vx * dt));
   const y = Math.max(0, Math.min(CARGO_WORLD.height, state.y + vy * dt));
-  const phase: RobotsPhase = moonDistance < 190 ? 'approach' : state.phase;
   const point = { x, y };
-  const asteroid = CARGO_ASTEROIDS.find((rock) => distance(point, rock) < rock.radius + 8);
+  const phase: RobotsPhase = distance(point, CARGO_WORLD.moon) < 190 ? 'approach' : state.phase;
+  // Keep the collision envelope close to the drawn asteroid and add only a small hull margin.
+  const asteroid = CARGO_ASTEROIDS.find((rock) => distance(point, rock) < rock.radius * 0.65 + 5);
   const crashed = Boolean(asteroid) || distance(point, CARGO_WORLD.moon) < CARGO_WORLD.moon.radius;
   const signal = Math.hypot(x - CARGO_WORLD.earth.x, y - CARGO_WORLD.earth.y) > 500 ? 45 : 100;
   const path = state.path;
@@ -161,6 +206,16 @@ export function stepCargoFlight(state: RobotsState, controls: CargoControls, del
             ? `Cargo rocket moving at ${Math.hypot(vx, vy).toFixed(1)} m/s.`
             : state.message,
   };
+}
+
+export function stepCargoFlight(state: RobotsState, controls: CargoControls, deltaSeconds: number): RobotsState {
+  const total = Math.max(0, Math.min(deltaSeconds, 0.25));
+  if (total === 0) return state;
+  const frames = Math.max(1, Math.ceil(total / (1 / 60)));
+  const dt = total / frames;
+  let next = state;
+  for (let frame = 0; frame < frames; frame += 1) next = stepCargoFlightFrame(next, controls, dt);
+  return next;
 }
 
 export function landCargoRocket(state: RobotsState): RobotsState {
@@ -197,6 +252,7 @@ export function deployRover(state: RobotsState): RobotsState {
     mappedTiles: [tileAt(8, 20)],
     photos: [],
     waterSampled: false,
+    parked: false,
     path: [],
     message: 'Touchdown confirmed. The rover rolls down the lander ramp. Hold the arrow keys to steer and drive.',
   };
@@ -206,34 +262,45 @@ export function stepRover(state: RobotsState, controls: RoverControls, deltaSeco
   if (state.phase !== 'driving') return state;
   const dt = Math.max(0, Math.min(deltaSeconds, 0.08));
   if (dt === 0) return state;
-  const turn = Number(controls.left) - Number(controls.right);
-  const heading = state.heading + turn * 1.8 * dt;
+  const speedBeforeTurn = Math.hypot(state.vx, state.vy);
+  const turn = Number(controls.right) - Number(controls.left);
+  const turnRate = 1.8 * (0.45 + Math.min(speedBeforeTurn, 12) / 12 * 0.55);
+  const heading = state.heading + turn * turnRate * dt;
   const drive = Number(controls.forward) - Number(controls.reverse);
-  const ax = Math.cos(heading) * drive * 24;
-  const ay = Math.sin(heading) * drive * 24;
-  let vx = (state.vx + ax * dt) * Math.pow(0.992, dt * 60);
-  let vy = (state.vy + ay * dt) * Math.pow(0.992, dt * 60);
+  const roughness = roverRoughnessAt(state.site, state.x, state.y);
+  const traction = 1 - roughness * 0.18;
+  const ax = Math.cos(heading) * drive * 18 * traction;
+  const ay = Math.sin(heading) * drive * 18 * traction;
+  const bump = Math.sin(state.x * 1.7 + state.y * 2.3) * roughness * Math.min(speedBeforeTurn, 12) * 0.035;
+  // Wheel traction is strongest on the ridge; loose crater regolith adds rolling resistance.
+  const drag = Math.exp(-(drive ? 0.12 + roughness * 0.45 : 0.9 + roughness * 0.25) * dt);
+  let vx = (state.vx + (ax + bump) * dt) * drag;
+  let vy = (state.vy + (ay - bump * 0.45) * dt) * drag;
   const speed = Math.hypot(vx, vy);
-  if (speed > 18) {
-    vx = vx / speed * 18;
-    vy = vy / speed * 18;
+  if (speed > 14) {
+    vx = vx / speed * 14;
+    vy = vy / speed * 14;
   }
-  const x = Math.max(0, Math.min(100, state.x + vx * dt));
-  const y = Math.max(0, Math.min(100, state.y + vy * dt));
+  const nextX = state.x + vx * dt;
+  const nextY = state.y + vy * dt;
+  const x = Math.max(0, Math.min(100, nextX));
+  const y = Math.max(0, Math.min(100, nextY));
+  if (x !== nextX) vx = 0;
+  if (y !== nextY) vy = 0;
   const mappedTiles = updateMap(state, x, y);
   const entersShadow = state.site === ROVER_SITES.shadowedCrater && inShadowCrater(x, y) && !inShadowCrater(state.x, state.y);
   const leavesShadow = state.signal === 22 && !inShadowCrater(x, y);
   const signal = entersShadow ? 22 : leavesShadow ? (state.site === ROVER_SITES.sunnyRidge ? 78 : 48) : state.signal;
   const autonomy = entersShadow ? Math.min(100, state.autonomy + 20) : state.autonomy;
   const isMoving = Math.abs(drive) > 0;
-  const battery = Math.max(0, state.battery - dt * (isMoving ? 0.4 : turn ? 0.12 : 0.02));
+  const battery = Math.max(0, state.battery - dt * (isMoving ? 0.4 + roughness * 0.25 : turn ? 0.12 : 0.02));
   const path = state.path;
   const lastPoint = path[path.length - 1];
   const nextPath = !lastPoint || Math.hypot(lastPoint.x - x, lastPoint.y - y) >= 1.5
     ? [...path, { x, y }].slice(-60)
     : path;
 
-  return {
+  return updateParkingStatus({
     ...state,
     x,
     y,
@@ -254,7 +321,7 @@ export function stepRover(state: RobotsState, controls: RoverControls, deltaSeco
           : isMoving
             ? `Driving at ${speed.toFixed(1)} m/s. ${mappedTiles.length} terrain tiles mapped.`
             : state.message,
-  };
+  });
 }
 
 export function takeRoverPhoto(state: RobotsState): RobotsState {
@@ -271,11 +338,7 @@ export function takeRoverPhoto(state: RobotsState): RobotsState {
     battery: state.battery - 4,
     message: `Picture ${photos.length} saved from terrain tile ${tile}.`,
   };
-  return isMissionComplete(next) ? {
-    ...next,
-    phase: 'complete',
-    message: 'Scout complete! Three pictures, a water-ice sample, and five terrain tiles are ready for Earth.',
-  } : next;
+  return updateParkingStatus(next);
 }
 
 export function sampleRoverWater(state: RobotsState): RobotsState {
@@ -291,11 +354,7 @@ export function sampleRoverWater(state: RobotsState): RobotsState {
     battery: state.battery - 8,
     message: 'Soil sample collected at the crater. The drill found clues consistent with water ice.',
   };
-  return isMissionComplete(next) ? {
-    ...next,
-    phase: 'complete',
-    message: 'Scout complete! Three pictures, a water-ice sample, and five terrain tiles are ready for Earth.',
-  } : next;
+  return updateParkingStatus(next);
 }
 
 export function restartRoverMission(): RobotsState {
