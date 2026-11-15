@@ -85,8 +85,17 @@ test('directory cards are visible on launch and chapters receive the full viewpo
   expect(backButton!.x).toBeLessThan(30);
   expect(backButton!.y).toBeLessThan(30);
   expect(chapterLabel!.x).toBeGreaterThan(backButton!.x + backButton!.width);
-  await expect(page.locator('#chapter-view > :not(.chapter-toolbar)')).toHaveCount(0);
+  await expect(page.locator('#chapter-view > :not(.chapter-toolbar)')).toHaveCount(1);
+  const site = page.getByRole('region', { name: 'Where will you train?' });
+  await expect(site).toBeVisible();
+  const siteBounds = await site.boundingBox();
+  expect(siteBounds).not.toBeNull();
+  expect(siteBounds!.x).toBe(0);
+  expect(siteBounds!.width).toBe(1280);
+  expect(siteBounds!.y).toBeLessThanOrEqual(60);
+  expect(siteBounds!.y + siteBounds!.height).toBe(800);
   await page.getByRole('button', { name: 'All missions' }).click();
+  await expect(page.locator('#survival-site')).toHaveCount(0);
   await expect(cards).toHaveCount(7);
 });
 

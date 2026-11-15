@@ -1,15 +1,218 @@
 import { expect, test } from '@playwright/test';
 import { enterDirectory } from './helpers/onboarding';
+import { power } from '../src/facts/power';
+import { regions } from '../src/data/chapter5/regions';
+import { chapter5Facts } from '../src/data/chapter5/facts';
+import { LABEL_WORDS } from '../src/facts/types';
 
-test('Survival opens as a blank chapter and returns to the directory', async ({ page }) => {
+test('Survival loads its fact adapter and returns to the directory', async ({ page }) => {
   await enterDirectory(page);
   await page.locator('[data-chapter="survival"]').click();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'survival');
   await expect(page.locator('#chapter-label')).toHaveText('Survival');
+  // Keep P1's browser import and attribution checks alongside the P2 screen.
+  const facts = await page.evaluate(async () => {
+    const modulePath = '/src/data/chapter5/facts.ts';
+    const { chapter5Facts } = await import(modulePath);
+    return {
+      oxygen: chapter5Facts['lifeSupport.oxygenPerDay'],
+      food: chapter5Facts['food.plantPower'],
+      unresolved: chapter5Facts['food.gramsPerWh'],
+    };
+  });
+  expect(facts.oxygen.unit).toBe('kg per astronaut per day');
+  expect(facts.oxygen.young).toBeTruthy();
+  expect(facts.oxygen.older).toBeTruthy();
+  expect(facts.oxygen.sources).not.toEqual([]);
+  expect(facts.food.unit).toBe('kW per m²');
+  expect(facts.unresolved).toBeUndefined();
   await expect(page.locator('#game-container canvas')).toBeVisible();
-  await expect(page.locator('#chapter-view > :not(.chapter-toolbar)')).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Where will you train?' })).toBeVisible();
   await expect(page.getByRole('button', { name: /scientific research|make oxygen|save water/i })).toHaveCount(0);
   await page.getByRole('button', { name: 'All missions' }).click();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
   await expect(page.locator('#home')).toBeVisible();
+  await expect(page.locator('#survival-site')).toHaveCount(0);
 });
+
+for (const age of ['7-9', '10-12'] as const) {
+  test(`decision log opens and closes without changing the challenge for ${age}`, async ({ page }) => {
+    await enterDirectory(page, age);
+    await page.locator('[data-chapter="survival"]').click();
+    await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
+    await page.getByRole('button', { name: 'Choose Haworth', exact: true }).click();
+    await page.getByRole('button', { name: 'Begin Into the dark' }).click();
+    await page.locator('[data-action="lab"]').click();
+    const sidebar = page.getByRole('complementary', { name: 'Challenge resources' });
+    const before = await sidebar.innerText();
+    const button = page.getByRole('button', { name: '💡 Log' });
+    await button.click();
+    const log = page.getByRole('region', { name: 'Decision log' });
+    await expect(log).toContainText('Day 1');
+    await expect(log).toContainText('Lab science');
+    if (age === '10-12') await expect(log).toContainText('15 kWh');
+    await button.click();
+    await expect(log).toBeHidden();
+    expect(await sidebar.innerText()).toBe(before);
+    await expect(page.getByRole('heading', { name: 'Day 1 results' })).toBeVisible();
+  });
+  test(`Into the dark plays six days and reaches the debrief for age ${age}`, async ({ page }) => {
+    await enterDirectory(page, age);
+    await page.locator('[data-chapter="survival"]').click();
+    await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
+    await page.getByRole('button', { name: 'Choose Haworth', exact: true }).click();
+    await page.getByRole('button', { name: 'Begin Into the dark' }).click();
+    await expect(page.getByRole('heading', { name: 'Into the dark' })).toBeVisible();
+    await expect(page.getByText('An example, not a forecast.', { exact: false })).toBeVisible();
+    const sidebar = page.getByRole('complementary', { name: 'Challenge resources' });
+    await expect(sidebar.locator('.survival-gauge')).toHaveCount(3);
+    for (const day of [1, 2, 3, 4, 5, 6]) {
+      await expect(page.getByRole('heading', { name: `Day ${day} of 6` })).toBeVisible();
+      await page.getByRole('combobox', { name: 'Make oxygen today (kg)' }).selectOption(day >= 5 ? '1' : '0');
+      await page.locator(`[data-action="${day === 1 ? 'lab' : day >= 5 ? 'moonwalk' : 'rest'}"]`).click();
+      await expect(page.getByRole('heading', { name: `Day ${day} results` })).toBeVisible();
+      await expect(page.locator('[data-gauge="energy"]')).toContainText('because');
+      await expect(page.locator('[data-gauge="air"]')).toContainText('because');
+      await expect(page.locator('[data-gauge="dose"]')).toContainText('training example');
+      if (day < 6) await page.getByRole('button', { name: `Continue to day ${day + 1}` }).click();
+    }
+    await expect(page.getByRole('heading', { name: 'Challenge complete!' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Challenge debrief' })).toBeVisible();
+    await expect(page.getByText(/★/)).toBeVisible();
+    const cards = page.locator('.survival-day-cards button');
+    if (age === '10-12') {
+      await expect(cards).toHaveCount(6);
+      await cards.first().click();
+      await expect(page.getByRole('heading', { name: 'What did I do?' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'What could I try?' })).toBeVisible();
+    } else await expect(cards).toHaveCount(0);
+    await expect(page.getByText('Science reached: 5 of 5 points.')).toBeVisible();
+    await page.getByRole('button', { name: 'Back to challenges' }).click();
+    await expect(page.getByRole('heading', { name: 'Choose a training challenge' })).toBeVisible();
+    await page.getByRole('button', { name: 'All missions' }).click();
+    await expect(page.locator('#survival-site')).toHaveCount(0);
+  });
+
+  test(`Into the dark safely ends and retries from day 5 for age ${age}`, async ({ page }) => {
+    await enterDirectory(page, age);
+    await page.locator('[data-chapter="survival"]').click();
+    await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
+    await page.getByRole('button', { name: 'Choose Haworth', exact: true }).click();
+    await page.getByRole('button', { name: 'Begin Into the dark' }).click();
+    for (const day of [1, 2, 3, 4, 5]) {
+      await page.locator('[data-action="rest"]').click();
+      if (day < 5) await page.getByRole('button', { name: `Continue to day ${day + 1}` }).click();
+    }
+    await expect(page.getByRole('heading', { name: 'Mission ended early: the crew flew home before the air ran out.' })).toBeVisible();
+    await expect(page.getByText(/because 2 astronauts needed/)).toBeVisible();
+    await page.getByRole('button', { name: 'Try again from day 5' }).click();
+    await expect(page.getByRole('heading', { name: 'Day 5 of 6' })).toBeVisible();
+    await page.getByRole('combobox', { name: 'Make oxygen today (kg)' }).selectOption('1');
+    await page.locator('[data-action="rest"]').click();
+    await expect(page.getByRole('heading', { name: 'Day 5 results' })).toBeVisible();
+    await page.getByRole('button', { name: 'Continue to day 6' }).click();
+    await expect(page.getByRole('heading', { name: 'Day 6 of 6' })).toBeVisible();
+  });
+
+  test(`P4 sidebar renders only its configured gauges for ${age}`, async ({ page }) => {
+    await enterDirectory(page, age);
+    // Component fixture only: P5 will provide actual challenge data and mounting.
+    const mount = async (alternate: boolean) => page.evaluate(async ({ alternate }) => {
+      const sidebarPath = '/src/game/chapters/survival/sidebar.ts';
+      const profilePath = '/src/playerProfile.ts';
+      const { renderSidebar } = await import(sidebarPath);
+      const { getPlayerProfile } = await import(profilePath);
+      document.querySelector<HTMLElement>('#app')!.hidden = true;
+      let host = document.querySelector<HTMLElement>('#sidebar-fixture');
+      if (!host) { host = document.createElement('main'); host.id = 'sidebar-fixture'; document.body.append(host); }
+      const challenge = alternate
+        ? { main: ['food', 'water'], extra: 'data', scienceGoal: 5 }
+        : { main: ['energy', 'air'], extra: 'dose', scienceGoal: 5 };
+      renderSidebar(host, challenge, {
+        energy: { value: 120, capacity: 200 }, air: { value: 8, capacity: 10 }, dose: { value: 1, capacity: 10 },
+        food: { value: 18, capacity: 20 }, water: { value: 25, capacity: 30 }, data: { value: 3, capacity: 10 },
+      }, alternate ? 5 : 2, getPlayerProfile().ageRange, 2);
+    }, { alternate });
+    await mount(false);
+    const sidebar = page.getByRole('complementary', { name: 'Challenge resources' });
+    await expect(sidebar).toBeVisible();
+    await expect(sidebar.locator('.survival-gauge')).toHaveCount(3);
+    await expect(sidebar.locator('.main')).toHaveCount(2);
+    await expect(sidebar.locator('.extra')).toHaveCount(1);
+    await expect(sidebar.locator('[data-resource="food"]')).toHaveCount(0);
+    await expect(sidebar.locator('[data-resource="air"] p')).toHaveText(age === '7-9' ? '5 days left' : '8 kg of oxygen · 5 days left');
+    await expect(sidebar.locator('[data-resource="energy"] p')).toHaveText(age === '7-9' ? 'Available' : '120 kWh · Available');
+    await expect(sidebar.getByRole('progressbar', { name: 'Science goal', exact: true })).toHaveAttribute('value', '2');
+    expect(await sidebar.locator('.main progress').first().evaluate((bar) => bar.getBoundingClientRect().height)).toBeGreaterThan(await sidebar.locator('.extra progress').evaluate((bar) => bar.getBoundingClientRect().height));
+    await mount(true);
+    await expect(page.locator('.survival-sidebar')).toHaveCount(1);
+    await expect(sidebar.locator('.survival-gauge')).toHaveCount(3);
+    await expect(sidebar.locator('[data-resource="energy"]')).toHaveCount(0);
+    await expect(sidebar.locator('[data-resource="food"] p')).toHaveText(age === '7-9' ? '5 days left' : '18 kg · 5 days left');
+    await expect(sidebar.getByRole('progressbar', { name: 'Science goal', exact: true })).toHaveAttribute('value', '5');
+    await expect(sidebar.locator('.survival-science-goal p')).toHaveText(age === '7-9' ? 'Goal reached!' : '5 / 5 science points');
+    await expect(sidebar.locator('.survival-science-goal')).not.toHaveClass(/survival-gauge/);
+  });
+
+  test(`site choice and both routes work for age ${age}`, async ({ page }) => {
+    await enterDirectory(page, age);
+    await page.locator('[data-chapter="survival"]').click();
+    await page.getByRole('button', { name: 'Near the equator', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Why look beyond the equator?' })).toBeVisible();
+    for (const fact of [power.equatorNight, power.nightCold, power.batteriesForNight]) {
+      const item = page.locator(`[data-fact-id="${fact.id}"]`);
+      await expect(item.locator('p')).toHaveText(age === '7-9' ? fact.young : fact.older);
+      for (const source of fact.sources) await expect(item).toContainText(source);
+    }
+    await expect(page.getByText("NASA is looking at the south pole instead. Let's go there!", { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Choose a south pole region' })).toHaveCount(0);
+    await expect(page.locator('#survival-site button')).toHaveCount(1);
+    await page.getByRole('button', { name: 'Back to site choice' }).click();
+    const south = page.getByRole('button', { name: 'Near the south pole', exact: true });
+    await expect(south).toHaveAttribute('data-recommended', 'true');
+    await expect(south).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('heading', { name: 'Choose a south pole region' })).toBeVisible();
+    await expect(page.locator('.survival-region-card')).toHaveCount(4);
+
+    await page.getByRole('button', { name: 'All missions' }).click();
+    await expect(page.locator('#survival-site')).toHaveCount(0);
+    await page.locator('[data-chapter="survival"]').click();
+    await expect(page.getByRole('heading', { name: 'Where will you train?' })).toBeVisible();
+    await expect(south).not.toHaveAttribute('data-recommended', 'true');
+    await south.click();
+    await expect(page.getByRole('heading', { name: 'Choose a south pole region' })).toBeVisible();
+    await expect(page.locator('[data-fact-id="power.equatorNight"]')).toHaveCount(0);
+  });
+
+  test(`each south pole region reaches challenge selection for age ${age}`, async ({ page }) => {
+    await enterDirectory(page, age);
+    await page.locator('[data-chapter="survival"]').click();
+    await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
+    await expect(page.getByText('Check before using: no final landing site has been chosen.')).toBeVisible();
+    await expect(page.locator('.survival-light-note')).toContainText('Every region uses the same light pattern');
+    for (const region of regions) {
+      const card = page.getByRole('article', { name: region.name, exact: true });
+      await expect(card.getByText('Picture coming soon')).toBeVisible();
+      for (const id of region.factIds) {
+        const fact = chapter5Facts[id];
+        const displayed = card.locator(`[data-fact-id="${id}"]`);
+        await expect(displayed.locator('p')).toHaveText(age === '7-9' ? fact.young : fact.older);
+        await expect(displayed.locator('strong')).toHaveText(LABEL_WORDS[fact.label]);
+      }
+      if (region.id === 'nobile-rim-2') {
+        await expect(card.getByText('This study describes one spot, not the whole region.')).toBeVisible();
+      }
+      await card.getByRole('button', { name: `Choose ${region.name}`, exact: true }).click();
+      await expect(page.getByRole('heading', { name: 'Choose a training challenge' })).toBeVisible();
+      await expect(page.getByText(`Chosen region: ${region.name}`, { exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Begin Into the dark' })).toBeVisible();
+      await page.getByRole('button', { name: 'Back to regions' }).click();
+      await expect(card.getByRole('button')).toHaveAttribute('aria-pressed', 'true');
+    }
+    await page.getByRole('button', { name: 'All missions' }).click();
+    await page.locator('[data-chapter="survival"]').click();
+    await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
+    await expect(page.locator('.survival-region-card button[aria-pressed="true"]')).toHaveCount(0);
+  });
+}
