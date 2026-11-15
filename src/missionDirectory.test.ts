@@ -5,10 +5,10 @@ import { missionDirectory } from './missionDirectory';
 describe('mission directory', () => {
   it('offers every registered chapter as a distinct, named choice immediately', () => {
     const entries = missionDirectory(chapters);
-    expect(entries).toHaveLength(7);
+    expect(entries).toHaveLength(6);
     expect(entries[0].chapter.id).toBe('survival');
     expect(new Set(entries.map(({ chapter }) => chapter.id))).toEqual(new Set(chapters.map(({ id }) => id)));
-    expect(new Set(entries.map(({ accessibleName }) => accessibleName)).size).toBe(7);
+    expect(new Set(entries.map(({ accessibleName }) => accessibleName)).size).toBe(6);
     expect(entries.every(({ chapter, accessibleName }) => accessibleName.includes(chapter.title))).toBe(true);
     expect(entries.every(({ accessibleName }) => !/\bMISSION\s*\d+/i.test(accessibleName))).toBe(true);
   });

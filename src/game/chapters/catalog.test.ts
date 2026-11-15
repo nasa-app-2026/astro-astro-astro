@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { chapters } from './catalog';
 
 describe('chapter catalog', () => {
-  it('defines seven ordered, independently addressable missions', () => {
-    expect(chapters).toHaveLength(7);
-    expect(chapters.map((chapter) => chapter.number)).toEqual([1, 2, 3, 4, 5, 6, 7]);
-    expect(new Set(chapters.map((chapter) => chapter.id)).size).toBe(7);
+  it('defines six ordered, independently addressable missions', () => {
+    expect(chapters).toHaveLength(6);
+    expect(chapters.map((chapter) => chapter.number)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(new Set(chapters.map((chapter) => chapter.id)).size).toBe(6);
     expect(chapters.every((chapter) => chapter.title && chapter.stage && chapter.summary)).toBe(true);
   });
 

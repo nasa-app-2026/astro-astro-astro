@@ -35,7 +35,7 @@ export const sounds2 = {
   },
   "rover-motor": {
     "id": "rover-motor",
-    "chapters": ["robots", "building", "expansion", "sustainability"],
+    "chapters": ["robots", "building", "expansion"],
     "download": "🔒 log in on the page, then Download",
     "page": "https://freesound.org/people/Burningmonkey/sounds/322021/",
     "source": "Burningmonkey (Freesound)",
@@ -51,7 +51,7 @@ export const sounds2 = {
   },
   "robot-arm-servo": {
     "id": "robot-arm-servo",
-    "chapters": ["robots", "building", "expansion", "sustainability"],
+    "chapters": ["robots", "building", "expansion"],
     "download": "🔒 log in on the page, then Download",
     "page": "https://freesound.org/people/gpag1/sounds/520514/",
     "source": "gpag1 (Freesound)",

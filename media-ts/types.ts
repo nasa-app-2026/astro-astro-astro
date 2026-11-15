@@ -6,7 +6,7 @@ export type Chapter =
   | 'building' 
   | 'survival' 
   | 'expansion' 
-  | 'sustainability';
+;
 
 export type MediaStatus = 
   | 'checked' 

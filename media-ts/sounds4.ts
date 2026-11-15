@@ -19,7 +19,7 @@ export const sounds4 = {
   },
   "machines-sci-fi-pack": {
     "id": "machines-sci-fi-pack",
-    "chapters": ["building", "sustainability"],
+    "chapters": ["building"],
     "download": "⚠️ open the page in a browser, check the licence, then use its download link",
     "page": "https://opengameart.org/content/50-cc0-sci-fi-sfx",
     "source": "rubberduck (OpenGameArt)",
@@ -121,7 +121,7 @@ export const sounds4 = {
   },
   "greenhouse-chime": {
     "id": "greenhouse-chime",
-    "chapters": ["expansion", "sustainability"],
+    "chapters": ["expansion"],
     "download": "button on page (zip, 85 sounds)",
     "page": "https://kenney.nl/assets/music-jingles",
     "source": "Kenney, \"Music Jingles\"",
@@ -137,7 +137,7 @@ export const sounds4 = {
   },
   "water-drip": {
     "id": "water-drip",
-    "chapters": ["expansion", "sustainability"],
+    "chapters": ["expansion"],
     "download": "record it: a few drops from a tap into a cup, with a phone, then trim in Audacity",
     "source": "the team",
     "licence": "the team owns it",

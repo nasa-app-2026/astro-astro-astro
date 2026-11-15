@@ -3,7 +3,7 @@ import type { ImageAsset } from './types';
 export const images5 = {
   "veggie-greens-iss": {
     "id": "veggie-greens-iss",
-    "chapters": ["expansion", "sustainability"],
+    "chapters": ["expansion"],
     "download": "https://images-assets.nasa.gov/image/iss060e006116/iss060e006116~large.jpg",
     "localImageURL": "../assets/images/veggie-greens-iss.jpg",
     "page": "https://images.nasa.gov/details/iss060e006116",
@@ -41,7 +41,7 @@ export const images5 = {
   },
   "oxygen-from-soil-test": {
     "id": "oxygen-from-soil-test",
-    "chapters": ["expansion", "sustainability"],
+    "chapters": ["expansion"],
     "download": "https://images-assets.nasa.gov/image/KSC-20220913-PH-CSH01_0001/KSC-20220913-PH-CSH01_0001~large.jpg",
     "localImageURL": "../assets/images/oxygen-from-soil-test.jpg",
     "page": "https://images.nasa.gov/details/KSC-20220913-PH-CSH01_0001",
@@ -60,23 +60,6 @@ export const images5 = {
     "notes": "a lab test on Earth; say so; crop out any faces",
     "directUrl": "https://images-assets.nasa.gov/image/KSC-20220913-PH-CSH01_0001/KSC-20220913-PH-CSH01_0001~large.jpg",
     "originalUrl": "https://images-assets.nasa.gov/image/KSC-20220913-PH-CSH01_0001/KSC-20220913-PH-CSH01_0001~orig.jpg"
-  },
-  "ice-map-drawn": {
-    "id": "ice-map-drawn",
-    "chapters": ["sustainability"],
-    "download": "🤔 make it: draw the south pole with dark craters coloured blue where ice may be",
-    "source": "the team",
-    "licence": "the team owns it",
-    "status": ["makeIt"],
-    "statusNote": "",
-    "shows": "where ice could be: in the coldest, always-dark craters",
-    "useFor": "choosing where the ice robot digs",
-    "tags": ["ice", "map", "crater", "water"],
-    "alt": "A map of the south pole with blue patches in dark craters where ice may be",
-    "size": "small",
-    "credit": "drawn by the team",
-    "facts": ["moonPlaces.shadowCraterCold", "moonPlaces.iceUnknowns"],
-    "notes": "label it \"a drawing, not a real ice map\"; scientists still do not know exactly how much ice there is"
   },
   "ui-panels-sci-fi": {
     "id": "ui-panels-sci-fi",

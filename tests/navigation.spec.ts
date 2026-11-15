@@ -5,10 +5,9 @@ const missions = [
   ['flyby', 'Flyby test'], ['robots', 'Robots go first'],
   ['firstLanding', 'First landing'], ['building', 'Building the outpost'],
   ['survival', 'Survival'], ['expansion', 'Expansion'],
-  ['sustainability', 'Sustainability'],
 ] as const;
 
-test('all seven missions open directly and return to the directory', async ({ page }) => {
+test('all six implemented missions open directly and return to the directory', async ({ page }) => {
   test.setTimeout(60_000);
   await enterDirectory(page);
   await expect(page.getByRole('heading', { name: /pick your next mission/i })).toBeVisible();
@@ -47,7 +46,7 @@ test('directory cards are visible on launch and chapters receive the full viewpo
   await page.setViewportSize({ width: 1280, height: 800 });
   await enterDirectory(page);
   const cards = page.locator('.chapter-card');
-  await expect(cards).toHaveCount(7);
+  await expect(cards).toHaveCount(6);
   await expect(cards.first()).toHaveAttribute('data-chapter', 'survival');
   await expect(page.locator('.chapter-number')).toHaveCount(0);
   await expect(cards.first()).toBeEnabled();
@@ -86,7 +85,7 @@ test('directory cards are visible on launch and chapters receive the full viewpo
   expect(siteBounds!.y + siteBounds!.height).toBe(800);
   await page.getByRole('button', { name: 'All missions' }).click();
   await expect(page.locator('#survival-site')).toHaveCount(0);
-  await expect(cards).toHaveCount(7);
+  await expect(cards).toHaveCount(6);
 });
 
 test('switching missions removes the previous chapter and starts the next one fresh', async ({ page }) => {
@@ -113,12 +112,6 @@ test('mission directory works at a narrow viewport with keyboard access', async 
   await page.setViewportSize({ width: 390, height: 844 });
   await enterDirectory(page);
   const cards = page.locator('.chapter-card');
-  await expect(cards).toHaveCount(7);
+  await expect(cards).toHaveCount(6);
   expect(await cards.evaluateAll((items) => items.every((item) => item.getBoundingClientRect().bottom <= window.innerHeight))).toBe(true);
-  await page.locator('[data-chapter="sustainability"]').focus();
-  await page.keyboard.press('Enter');
-  await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'sustainability');
-  await expect(page.locator('#chapter-view')).toBeVisible();
-  await page.getByRole('button', { name: 'All missions' }).click();
-  await expect(page.locator('#home')).toBeVisible();
 });

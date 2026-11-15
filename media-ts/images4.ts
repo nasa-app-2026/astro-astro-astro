@@ -3,7 +3,7 @@ import type { ImageAsset } from './types';
 export const images4 = {
   "outpost-drawn": {
     "id": "outpost-drawn",
-    "chapters": ["building", "sustainability"],
+    "chapters": ["building"],
     "download": "🤔 make it: draw the outpost (habitat, tall solar array, shelter, landing pad) in Krita or Inkscape, or build it from Kenney UI and \"Space Kit\" previews",
     "source": "the team",
     "licence": "the team owns it",

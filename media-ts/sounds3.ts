@@ -152,7 +152,7 @@ export const sounds3 = {
   },
   "construction-clangs": {
     "id": "construction-clangs",
-    "chapters": ["building", "sustainability"],
+    "chapters": ["building"],
     "download": "button on page (zip, 130 sounds)",
     "page": "https://kenney.nl/assets/impact-sounds",
     "source": "Kenney, \"Impact Sounds\"",

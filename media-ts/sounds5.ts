@@ -1,57 +1,6 @@
 import type { SoundAsset } from './types';
 
 export const sounds5 = {
-  "ice-drill": {
-    "id": "ice-drill",
-    "chapters": ["sustainability"],
-    "download": "record it: an adult uses an electric screwdriver or drill on a piece of wood, a phone records it, trim in Audacity",
-    "source": "the team",
-    "licence": "the team owns it",
-    "status": ["makeIt"],
-    "statusNote": "make it (gap: no checked drilling sound was found)",
-    "soundsLike": "a drill grinding",
-    "useFor": "a robot drilling into icy soil in a dark crater",
-    "tags": ["drill", "ice", "dig", "robot"],
-    "loop": "yes, if trimmed well",
-    "length": "a few seconds",
-    "credit": "recorded by the team",
-    "notes": "safety first: an adult holds the tool. No voices in the recording. Outside on the Moon the drill would be silent (vacuum): a game simplification"
-  },
-  "water-bubbling": {
-    "id": "water-bubbling",
-    "chapters": ["sustainability"],
-    "download": "record it: blow gently through a straw into a glass of water, or make bubbles in jsfxr (https://sfxr.me)",
-    "source": "the team",
-    "licence": "the team owns it",
-    "status": ["makeIt"],
-    "statusNote": "make it (gap: no checked bubbling sound was found)",
-    "soundsLike": "bubbling water",
-    "useFor": "the machine that melts ice and cleans the water; splitting water into oxygen",
-    "tags": ["water", "bubbles", "machine", "oxygen"],
-    "loop": "yes",
-    "length": "a few seconds",
-    "credit": "recorded by the team, or made with jsfxr by the team"
-  },
-  "celebration-small-step": {
-    "id": "celebration-small-step",
-    "chapters": ["sustainability"],
-    "download": "https://www.nasa.gov/wp-content/uploads/2015/01/590331main_ringtone_smallStep.mp3",
-    "localURL": "../assets/audio/one-small-step.mp3",
-    "page": "https://www.nasa.gov/historical-sounds/",
-    "source": "NASA, \"Apollo 11: That's One Small Step for (a) Man\"",
-    "licence": "NASA (generally not copyrighted)",
-    "status": ["checked"],
-    "statusNote": "file link works; not listened to",
-    "soundsLike": "Neil Armstrong's first words on the Moon",
-    "useFor": "the final screen: from the first step in 1969 to an outpost that looks after itself",
-    "tags": ["ending", "celebration", "voice", "apollo", "real"],
-    "loop": "no",
-    "length": "short",
-    "credit": "Sound: NASA, \"Apollo 11: That's One Small Step for (a) Man\", nasa.gov/historical-sounds",
-    "caption": "check by listening: \"That's one small step for (a) man, one giant leap for mankind.\"",
-    "notes": "the same file as 'one-small-step' in chapter 3; list it once in CREDITS.md",
-    "directUrl": "https://www.nasa.gov/wp-content/uploads/2015/01/590331main_ringtone_smallStep.mp3"
-  },
   "ui-click": {
     "id": "ui-click",
     "chapters": ["common", "survival"],
@@ -87,7 +36,7 @@ export const sounds5 = {
   },
   "computer-beeps": {
     "id": "computer-beeps",
-    "chapters": ["common", "flyby", "robots", "building", "survival", "sustainability"],
+    "chapters": ["common", "flyby", "robots", "building", "survival"],
     "download": "button on page (zip, 70 sounds)",
     "page": "https://kenney.nl/assets/sci-fi-sounds",
     "source": "Kenney, \"Sci-Fi Sounds\"",
@@ -103,7 +52,7 @@ export const sounds5 = {
   },
   "retro-blips": {
     "id": "retro-blips",
-    "chapters": ["common", "robots", "building", "expansion", "sustainability"],
+    "chapters": ["common", "robots", "building", "expansion"],
     "download": "button on page (zip, 60 sounds)",
     "page": "https://kenney.nl/assets/digital-audio",
     "source": "Kenney, \"Digital Audio\"",
@@ -120,7 +69,7 @@ export const sounds5 = {
   },
   "jingles": {
     "id": "jingles",
-    "chapters": ["common", "flyby", "firstLanding", "building", "survival", "expansion", "sustainability"],
+    "chapters": ["common", "flyby", "firstLanding", "building", "survival", "expansion"],
     "download": "button on page (zip, 85 sounds)",
     "page": "https://kenney.nl/assets/music-jingles",
     "source": "Kenney, \"Music Jingles\"",

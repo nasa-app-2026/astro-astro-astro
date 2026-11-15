@@ -48,7 +48,7 @@ export const images2 = {
   },
   "viper-rover-test": {
     "id": "viper-rover-test",
-    "chapters": ["robots", "sustainability"],
+    "chapters": ["robots"],
     "download": "https://images-assets.nasa.gov/image/GRC-2021-C-00470/GRC-2021-C-00470~large.jpg",
     "localImageURL": "../assets/images/viper-rover-test.jpg",
     "page": "https://images.nasa.gov/details/GRC-2021-C-00470",

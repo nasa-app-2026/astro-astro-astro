@@ -97,7 +97,7 @@ export const images6 = {
   },
   "south-pole-topography": {
     "id": "south-pole-topography",
-    "chapters": ["common", "robots", "building", "survival", "sustainability"],
+    "chapters": ["common", "robots", "building", "survival"],
     "download": "https://images-assets.nasa.gov/image/PIA12077/PIA12077~large.jpg",
     "localImageURL": "../assets/images/south-pole-topography.jpg",
     "page": "https://images.nasa.gov/details/PIA12077",

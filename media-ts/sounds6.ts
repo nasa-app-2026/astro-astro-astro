@@ -101,7 +101,7 @@ export const sounds6 = {
   },
   "music-calm-loop-2": {
     "id": "music-calm-loop-2",
-    "chapters": ["common", "sustainability"],
+    "chapters": ["common"],
     "download": "⚠️ open the page in a browser, check the licence, then use its download link",
     "page": "https://opengameart.org/content/outer-space-loop",
     "source": "wipics (OpenGameArt)",
