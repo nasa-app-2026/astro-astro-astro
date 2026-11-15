@@ -23,4 +23,12 @@ export const settings = Object.freeze({
   moonwalkScienceGain: 2, // Game rule, made up for fun — points
   oxygenChoices: [0, 1, 2], // Game rule, made up for fun — kg
   quietDosePerDay: 0.9, // Game rule, made up for fun — mSv/day; unsourced training assumption
+  // Game estimate, made up for fun: there is no official way to turn a storm's S level into a dose on the Moon.
+  stormDose: { S1: 5, S2: 20, S3: 80, S4: 300 },
+  shelterDoseFraction: 0.5, // Game rule, made up for fun — inspired by radiation.shelterMass
+  protectedRoomDoseFraction: 0.9, // Game rule, made up for fun
+  walkBackDoseFraction: 0.1, // Game rule, made up for fun
+  moutonWalkBackDoseFraction: 0.2, // Game rule, made up for fun — longer walk back
+  extraKitScience: 1, // Game rule, made up for fun — point per lab day
+  stormChallengeSeed: 42, // Game rule, made up for fun — reproducible training schedule
 });

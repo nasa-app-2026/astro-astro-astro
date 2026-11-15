@@ -5,6 +5,42 @@ import { regions } from '../src/data/chapter5/regions';
 import { chapter5Facts } from '../src/data/chapter5/facts';
 import { LABEL_WORDS } from '../src/facts/types';
 
+test('Storm alert planning and quiet challenge reach the debrief', async ({ page }) => {
+  await enterDirectory(page, '10-12');
+  await page.locator('[data-chapter="survival"]').click();
+  await page.getByRole('button', { name: 'Near the south pole' }).click();
+  await page.getByRole('button', { name: 'Choose Haworth' }).click();
+  await page.getByRole('button', { name: 'Begin Storm alert' }).click();
+  await page.getByRole('button', { name: 'Quiet Sun' }).click();
+  await expect(page.getByText(/Predicted cosmic rays: 5.4 mSv/)).toBeVisible();
+  await page.getByRole('button', { name: 'Start Storm alert' }).click();
+  for (let day = 1; day <= 6; day++) {
+    await expect(page.getByText(`Day ${day} of 6. Shelter built.`)).toBeVisible();
+    await page.getByRole('combobox', { name: 'Make oxygen today (kg)' }).selectOption(day >= 5 ? '1' : '0');
+    await page.getByRole('button', { name: 'Rest', exact: true }).click();
+  }
+  await expect(page.getByText('Challenge complete!')).toBeVisible();
+  await expect(page.getByText(/Debrief: planned cosmic dose/)).toBeVisible();
+  await page.getByRole('button', { name: 'Back to challenges' }).click();
+});
+
+test('P8 archived storm rules load in the game without changing Survival navigation', async ({ page }) => {
+  await enterDirectory(page);
+  await page.locator('[data-chapter="survival"]').click();
+  const data = await page.evaluate(async () => {
+    const dataPath = '/src/data/chapter5/storms.ts';
+    const rulesPath = '/src/rules/chapter5/storms.ts';
+    const { stormArchive } = await import(dataPath);
+    const { scheduleAlerts, stormImpact } = await import(rulesPath);
+    const schedule = scheduleAlerts(stormArchive.months[0], 6, 42);
+    return { months: stormArchive.months.length, hasUnknown: schedule.some((entry: { kind: string }) => entry.kind === 'unknown'), dose: stormImpact('S4', true, false).dose };
+  });
+  expect(data).toEqual({ months: 2, hasUnknown: true, dose: 150 });
+  await expect(page.getByRole('heading', { name: 'Where will you train?' })).toBeVisible();
+  await page.getByRole('button', { name: 'All missions' }).click();
+  await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
+});
+
 test('Survival loads its fact adapter and returns to the directory', async ({ page }) => {
   await enterDirectory(page);
   await page.locator('[data-chapter="survival"]').click();

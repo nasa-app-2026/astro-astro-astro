@@ -11,6 +11,11 @@ import { advanceIntoTheDark, isDark, replayToMorning, startIntoTheDark } from '.
 import { renderSidebar } from './survival/sidebar';
 import type { DecisionLogEntry } from '../../rules/chapter5/log';
 import { findTurningPoint } from '../../rules/chapter5/turning-point';
+import { stormAlert } from '../../data/chapter5/challenges/storm-alert';
+import { advanceStormAlert, prediction, startStormAlert, type Cargo, type Sun, type StormAction } from '../../rules/chapter5/storm-alert';
+import { settings } from '../../data/chapter5/settings';
+import { archiveLabel } from '../../rules/chapter5/storms';
+import { stormArchive } from '../../data/chapter5/storms';
 import './survival/site.css';
 
 export class SurvivalScene extends ChapterScene {
@@ -260,12 +265,81 @@ export class SurvivalScene extends ChapterScene {
       };
       render();
     };
+    const showStormPlanning = () => {
+      let sun: Sun = 'busy';
+      let cargo: Cargo = 'shelter';
+      const renderPlanning = () => {
+        heading('Plan Storm alert');
+        paragraph('A what-if: NASA picks dates for other reasons.');
+        paragraph('Choose the Sun:');
+        for (const choice of ['busy', 'quiet'] as const) {
+          const item = button(choice === 'busy' ? 'Busy Sun' : 'Quiet Sun', () => { sun = choice; renderPlanning(); });
+          item.setAttribute('aria-pressed', String(sun === choice));
+        }
+        paragraph('Choose your cargo:');
+        for (const choice of ['shelter', 'science'] as const) {
+          const item = button(choice === 'shelter' ? 'Shelter supplies' : 'Extra science kit', () => { cargo = choice; renderPlanning(); });
+          item.setAttribute('aria-pressed', String(cargo === choice));
+        }
+        const plan = { sun, cargo, region: this.state.chosenRegion ?? 'haworth', seed: settings.stormChallengeSeed };
+        const estimate = prediction(plan);
+        paragraph(`Predicted cosmic rays: ${estimate.cosmic} mSv. An unshielded storm could be anywhere from 0 to ${estimate.maxStorm} mSv (game estimate); nobody can predict storms. A moonwalk can add more. Single-storm line: ${estimate.limit} mSv.`);
+        paragraph(archiveLabel(sun === 'busy' ? '2024-05' : '2019-12'));
+        panel.append(factElement('radiation.watershield'));
+        panel.append(factElement(sun === 'busy' ? 'radiation.doseBusySun' : 'radiation.doseQuietSun'));
+        paragraph(`Archive source references: ${stormArchive.sourceKeys.join(', ')}.`);
+        if (plan.region === 'mons-mouton') paragraph('Mons Mouton has challenging ground, so in this training the walk back adds 20% of the storm dose instead of 10%.');
+        button('Start Storm alert', () => {
+          let state = startStormAlert(plan);
+          const renderDay = () => {
+            heading('Storm alert');
+            const host = document.createElement('div');
+            renderSidebar(host, stormAlert.gauges, {
+              energy: { value: state.base.energy, capacity: settings.startingEnergy },
+              air: { value: state.base.air, capacity: settings.startingAir },
+              dose: { value: state.stormDose, capacity: stormAlert.stormLimit },
+            }, state.science, getPlayerProfile().ageRange, settings.crewCount);
+            panel.append(host);
+            paragraph(`Storm gauge: ${state.stormDose} mSv · Single-storm line: ${stormAlert.stormLimit} mSv · Total this mission: ${state.totalDose} mSv.`);
+            if (state.lastMessage) paragraph(state.lastMessage);
+            if (state.ended) {
+              paragraph(state.ending ?? '');
+              paragraph(`Debrief: planned cosmic dose ${estimate.cosmic} mSv; simulated dose ${state.totalDose} mSv because daily cosmic rays and estimated storm doses accumulated.${state.unknownDose ? ' Some event doses were unknown, so the total is incomplete.' : ''}`);
+              if (state.safetyPraise) paragraph('With the information you had, keeping the crew safe was a smart choice. It cost one day of science.');
+              button('Back to challenges', showChallenges);
+              return;
+            }
+            const day = state.base.day;
+            paragraph(`Day ${day} of ${stormAlert.lengthDays}. Shelter ${state.built ? 'built' : 'not built'}.`);
+            paragraph('Building a shelter stacks water bags around the bunks and costs the day’s science. Taking shelter also costs the day’s science.');
+            const warnings = state.alerts.filter(alert => alert.warningDay === day || alert.arrivalDay === day);
+            if (warnings.length) paragraph('Space weather alert: an event may arrive today or tomorrow.');
+            const select = document.createElement('select');
+            select.setAttribute('aria-label', 'Make oxygen today (kg)');
+            for (const amount of settings.oxygenChoices) {
+              const option = document.createElement('option'); option.value = String(amount); option.textContent = `${amount} kg`; select.append(option);
+            }
+            panel.append(select);
+            const actions: { id: StormAction; title: string }[] = [
+              { id: 'lab', title: 'Lab science' }, { id: 'moonwalk', title: 'Moonwalk for science' }, { id: 'rest', title: 'Rest' },
+              ...(!state.built ? [{ id: 'build' as const, title: 'Build the shelter' }] : []),
+              ...(warnings.length ? [{ id: 'shelter' as const, title: 'Take shelter' }] : []),
+            ];
+            for (const action of actions) button(action.title, () => { state = advanceStormAlert(state, Number(select.value), action.id); renderDay(); });
+          };
+          renderDay();
+        });
+        button('Back to challenges', showChallenges);
+      };
+      renderPlanning();
+    };
     const showChallenges = () => {
       heading('Choose a training challenge');
       const region = regions.find((entry) => entry.id === this.state.chosenRegion);
       paragraph(`Chosen region: ${region?.name}`);
       paragraph('Choose your first resource challenge.');
       button('Begin Into the dark', showIntoTheDark);
+      button('Begin Storm alert', showStormPlanning);
       button('Back to regions', showRegions);
     };
     const showRegions = () => {

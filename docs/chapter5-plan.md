@@ -239,8 +239,8 @@ P1 clarifications now recorded: use the 15 verified exact IDs only; create `src/
 - [x] P5: Into the dark implemented. Typecheck and all 50 unit tests pass. All Survival Chromium tests pass in both age modes. Three full `npm run test` runs each had 22 of 23 Chromium tests pass: first an unrelated Flyby timer assertion, then twice an unrelated First Landing descent timeout. The full check is not yet green. The 0.9 mSv/day dose is labelled as an unsourced training assumption.
 - [x] P6: decision log and delayed energy links; `npm run test` passed (51 unit tests, 25 Chromium tests).
 - [x] P7: debrief and turning-point replay implemented; `npm run test` passed (52 unit tests, 25 Chromium tests).
-- [ ] P8: source details.
-- [ ] P9: energy rules.
+- [ ] P8: NASA DONKI archive and rules implemented for May 2024 and December 2019. The NOAA archive identifies two S2 proton events by matching times and associated flares; twelve other DONKI SEP records remain unknown as authorized. Unknown levels cannot produce a dose. Zod validates the archive. Source titles await `sources.ts`; storm gauge and debrief screen remain for a later screen step because P8 requests rules only. Typecheck and 59 unit tests pass; all Survival browser tests passed on the second full run, but two unrelated Expansion tests timed out waiting for the hidden mission tile.
+- [x] P9: Storm alert planning and challenge implemented, with user-approved `radiation.watershield`, NOAA archive events, unknown-level exclusions, shelter choices, region walk-back rule and dose debrief. A simulated S4 is used only in tests. Typecheck and 65 unit tests pass; 27 of 29 Chromium tests pass, including P9; two Expansion tests timed out waiting for the hidden mission tile. Source titles await `sources.ts`.
 - [ ] P10: challenge selection.
 - [ ] P11: space-weather data.
 - [ ] P12: radiation rules.

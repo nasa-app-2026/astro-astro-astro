@@ -15,6 +15,93 @@ import { intoTheDark } from '../../data/chapter5/challenges/into-the-dark';
 import { advanceIntoTheDark, isDark, replayToMorning, startIntoTheDark } from '../../rules/chapter5/into-the-dark';
 import { linkEnergyProblem } from '../../rules/chapter5/log';
 import { findTurningPoint } from '../../rules/chapter5/turning-point';
+import { stormArchive, stormArchiveSchema } from '../../data/chapter5/storms';
+import { dailyDose, scheduleAlerts, stormImpact } from '../../rules/chapter5/storms';
+import { advanceStormAlert, prediction, startStormAlert, type Plan } from '../../rules/chapter5/storm-alert';
+
+describe('Storm alert planning and rules', () => {
+  const plan: Plan = { sun: 'quiet', cargo: 'shelter', region: 'haworth', seed: 42 };
+  it('calculates dose predictions from the chosen Sun and sets shelter cargo', () => {
+    expect(prediction(plan)).toEqual({ cosmic: 5.4, maxStorm: 300, limit: 250 });
+    expect(prediction({ ...plan, sun: 'busy' }).cosmic).toBeCloseTo(2.4);
+    expect(startStormAlert(plan).built).toBe(true);
+    expect(startStormAlert({ ...plan, cargo: 'science' }).built).toBe(false);
+  });
+  it('finishes a careful quiet mission deterministically', () => {
+    const play = () => {
+      let state = startStormAlert(plan);
+      for (let day = 1; day <= 6; day++) state = advanceStormAlert(state, day >= 5 ? 1 : 0, 'rest');
+      return state;
+    };
+    expect(play().ending).toBe('Challenge complete!');
+    expect(play()).toEqual(play());
+  });
+  it('ends safely for a simulated S4 moonwalk without shelter', () => {
+    const state = startStormAlert({ ...plan, cargo: 'science' }, [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm', level: 'S4' }]);
+    const result = advanceStormAlert(state, 0, 'moonwalk');
+    expect(result.stormDose).toBe(300);
+    expect(result.ending).toBe('Mission ended early, crew safe.');
+  });
+  it('adds extra science for lab work and protects a built shelter on alert', () => {
+    const alert = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S4' as const }];
+    expect(advanceStormAlert(startStormAlert(plan, alert), 0, 'shelter').stormDose).toBe(150);
+    expect(advanceStormAlert(startStormAlert({ ...plan, cargo: 'science' }), 0, 'lab').science).toBe(2);
+  });
+  it('finishes the busy archive when the crew shelters at each alert', () => {
+    let state = startStormAlert({ ...plan, sun: 'busy' });
+    for (let day = 1; day <= 6; day++) {
+      const warned = state.alerts.some(alert => alert.warningDay === day || alert.arrivalDay === day);
+      state = advanceStormAlert(state, day >= 5 ? 1 : 0, warned ? 'shelter' : 'rest');
+    }
+    expect(state.ending).toBe('Challenge complete!');
+    expect(state.safetyPraise).toBe(true);
+  });
+  it('uses the longer Mons Mouton walk-back estimate', () => {
+    const alerts = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S2' as const }];
+    const haworth = advanceStormAlert(startStormAlert(plan, alerts), 0, 'moonwalk');
+    const mouton = advanceStormAlert(startStormAlert({ ...plan, region: 'mons-mouton' }, alerts), 0, 'moonwalk');
+    expect(mouton.stormDose - haworth.stormDose).toBe(2);
+  });
+  it('keeps unknown particle doses visible as an incomplete total', () => {
+    const alerts = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'unknown' as const, level: null }];
+    const first = advanceStormAlert(startStormAlert(plan, alerts), 0, 'shelter');
+    expect(first.unknownDose).toBe(true);
+    expect(first.lastMessage).toContain('unknown level');
+    expect(advanceStormAlert(first, 0, 'rest').unknownDose).toBe(true);
+  });
+});
+
+describe('Archived solar events and storm rules', () => {
+  it('validates the downloaded archive and preserves unmatched SEP levels', () => {
+    expect(stormArchiveSchema.safeParse(stormArchive).success).toBe(true);
+    const busy = stormArchive.months.find(month => month.month === '2024-05')!;
+    const quiet = stormArchive.months.find(month => month.month === '2019-12')!;
+    expect(busy.flares).toHaveLength(181);
+    expect(busy.seps).toHaveLength(14);
+    expect(busy.seps.filter(sep => sep.level === 'S2')).toHaveLength(2);
+    expect(busy.seps.filter(sep => sep.level === 'unknown')).toHaveLength(12);
+    expect(quiet.flares).toHaveLength(0);
+    expect(quiet.seps).toHaveLength(0);
+    expect(stormArchiveSchema.safeParse({ ...stormArchive, months: [{ ...busy, seps: [] }] }).success).toBe(false);
+  });
+  it('calculates sheltered and exposed doses and the moonwalk return', () => {
+    expect(stormImpact('S4', false, false)).toMatchObject({ dose: 270, ended: true });
+    expect(stormImpact('S4', true, false)).toMatchObject({ dose: 150, ended: false });
+    expect(stormImpact('S4', true, true).dose).toBe(180);
+    expect(stormImpact(null, false, false).dose).toBe(0);
+    expect(() => stormImpact('unknown', false, false)).toThrow('known level');
+    expect(dailyDose('busy')).toBe(0.4);
+    expect(dailyDose('quiet')).toBe(0.9);
+  });
+  it('uses a deterministic seed and retains unknown event classifications', () => {
+    const month = stormArchive.months[0];
+    const schedule = scheduleAlerts(month, 6, 42);
+    expect(schedule).toEqual(scheduleAlerts(month, 6, 42));
+    expect(schedule.some(event => event.kind === 'unknown')).toBe(true);
+    expect(schedule.some(event => event.kind === 'storm' && event.level === 'S2')).toBe(true);
+    expect(schedule.every(event => event.warningDay <= event.arrivalDay && event.arrivalDay - event.warningDay <= 1)).toBe(true);
+  });
+});
 
 it('finds a single oxygen change that helps a fixed no-oxygen challenge', () => {
   let state = startIntoTheDark();
