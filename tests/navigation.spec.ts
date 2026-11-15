@@ -32,7 +32,10 @@ test('all seven missions open directly and return to the directory', async ({ pa
 
 test('scrolling is locked only for stage one and two missions', async ({ page }) => {
   await page.goto('/');
-  await page.evaluate(() => { document.documentElement.scrollTop = 500; });
+  await page.evaluate(() => {
+    document.documentElement.style.scrollBehavior = 'auto';
+    window.scrollTo(0, 500);
+  });
   expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   await page.evaluate(() => { document.documentElement.scrollTop = 0; });
 

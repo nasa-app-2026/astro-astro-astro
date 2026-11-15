@@ -6,6 +6,15 @@ test('pilot the rocket from the launch pad and watch its live camera move', asyn
   await page.locator('[data-chapter="flyby"]').click();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'flyby');
   await expect(page.getByRole('img', { name: /rocket camera showing earth, moon, .*ship position/i })).toBeVisible();
+  const missionGrid = await page.locator('.flyby-panel .mission-grid').boundingBox();
+  const camera = await page.locator('.flyby-panel .camera').boundingBox();
+  const telemetry = await page.locator('.flyby-panel .telemetry').boundingBox();
+  expect(camera?.width).toBeGreaterThan((missionGrid?.width ?? 0) * 0.95);
+  expect(camera?.height).toBeGreaterThan((missionGrid?.height ?? 0) * 0.9);
+  expect(telemetry?.height).toBeLessThan(50);
+  expect(telemetry!.y).toBeGreaterThan(camera!.y + camera!.height * 0.75);
+  await expect(page.locator('#flyby-live-camera')).toHaveAttribute('viewBox', '0 0 1000 200');
+  await expect(page.locator('.flyby-panel .first-person')).toBeHidden();
   await expect(page.locator('#flyby-action-dock')).toBeInViewport();
   await expect(page.locator('#fuel-fill')).toBeInViewport();
   await expect(page.locator('#battery-store')).toBeInViewport();
@@ -34,7 +43,7 @@ test('pilot the rocket from the launch pad and watch its live camera move', asyn
   await page.keyboard.press('g');
   await expect(page.locator('#flyby-message')).toContainText('Lunar gravity reading unavailable here');
   await expect(page.locator('#flyby-action-dock')).toBeInViewport();
-  await expect(page.locator('#flyby-action-dock')).toHaveCSS('position', 'fixed');
+  await expect(page.locator('#flyby-action-dock')).toHaveCSS('position', 'relative');
   await expect(page.getByRole('button', { name: /Crater photographs/i })).toBeInViewport();
   const thrusterButton = page.getByRole('button', { name: 'Thrust up' });
   for (let pulse = 0; pulse < 8; pulse += 1) {
@@ -44,6 +53,16 @@ test('pilot the rocket from the launch pad and watch its live camera move', asyn
   await expect(page.locator('#flyby-position')).not.toHaveText(startingPosition ?? '');
   await expect(page.locator('#flyby-speed')).not.toHaveText('0.0 m/s');
   await expect(page.locator('#flyby-camera-state')).toContainText('LIVE');
+  const rocket = await page.locator('#flyby-ship').boundingBox();
+  const earth = await page.locator('#flyby-earth').boundingBox();
+  const liveCamera = await page.locator('#flyby-live-camera').boundingBox();
+  const liveTelemetry = await page.locator('.flyby-panel .telemetry').boundingBox();
+  expect(rocket).not.toBeNull();
+  expect(earth).not.toBeNull();
+  expect(rocket!.x).toBeGreaterThanOrEqual(liveCamera!.x);
+  expect(rocket!.x + rocket!.width).toBeLessThanOrEqual(liveCamera!.x + liveCamera!.width);
+  expect(rocket!.y + rocket!.height).toBeLessThan(liveTelemetry!.y);
+  expect(earth!.y + earth!.height).toBeLessThan(liveTelemetry!.y);
   await expect(page.getByText(/release to brake/i)).toBeVisible();
 
   await page.getByRole('button', { name: 'All missions' }).click();

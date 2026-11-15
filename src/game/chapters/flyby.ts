@@ -107,17 +107,17 @@ export class FlybyScene extends ChapterScene {
       <div class="mission-grid">
         <div class="camera" aria-label="Live ship camera">
           <div class="camera-title"><span>LIVE FLIGHT CAMERA</span><span id="flyby-camera-state">● READY</span></div>
-          <svg viewBox="0 0 360 200" role="img" aria-label="Rocket camera showing Earth, Moon, asteroids, and ship position">
+          <svg id="flyby-live-camera" viewBox="0 0 1000 200" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Rocket camera showing Earth, Moon, asteroids, and ship position">
             <defs><radialGradient id="flight-space"><stop stop-color="#173b56"/><stop offset="1" stop-color="#06121f"/></radialGradient></defs>
-            <rect width="360" height="200" fill="url(#flight-space)"/>
-            <g fill="#e1f4ff" opacity=".8"><circle cx="24" cy="24" r="1"/><circle cx="128" cy="18" r="1.2"/><circle cx="220" cy="32" r=".9"/><circle cx="330" cy="18" r="1"/><circle cx="305" cy="175" r="1.1"/><circle cx="58" cy="105" r=".8"/></g>
-            <polyline id="flyby-path" points="" fill="none" stroke="#77e6d7" stroke-width="1.5" stroke-dasharray="3 3" opacity=".75"/>
-            <g id="flyby-earth"><circle cx="0" cy="0" r="27" fill="#24689e" stroke="#8bd4f5" stroke-width="2"/><path d="M-20-7Q-12-24-2-17L4-12 0-5-7-7-11 0-19 2ZM2-3 10-10 20-6 17 2 11 4 9 13 3 19-1 10-7 5-5-1Z" fill="#73b98a"/><path d="M-24-12Q-10-28 9-22M-23 13Q-8 25 12 20" fill="none" stroke="#d4f4ff" stroke-width="2" opacity=".8"/><circle cx="0" cy="0" r="30" fill="none" stroke="#65c7e8" stroke-width="1" opacity=".5"/></g>
-            <g id="flyby-moon"><circle cx="0" cy="0" r="14" fill="#a9bac9" stroke="#e1e9ee"/><circle cx="-5" cy="-4" r="3" fill="#75899a"/><circle cx="6" cy="5" r="4" fill="#7e92a2"/><circle cx="3" cy="-7" r="1.5" fill="#8195a3"/></g>
+            <rect width="1000" height="200" fill="url(#flight-space)"/>
+            <g fill="#e1f4ff" opacity=".8"><circle cx="24" cy="24" r="1"/><circle cx="128" cy="18" r="1.2"/><circle cx="220" cy="32" r=".9"/><circle cx="330" cy="18" r="1"/><circle cx="505" cy="174" r="1.1"/><circle cx="58" cy="105" r=".8"/><circle cx="420" cy="72" r="1.1"/><circle cx="740" cy="35" r="1.2"/><circle cx="925" cy="112" r="1.1"/></g>
+            <path d="M102 142Q440 160 790 76" fill="none" stroke="#8fb5ca" stroke-width="1" stroke-dasharray="5 9" opacity=".28"/>
+            <polyline id="flyby-path" points="" fill="none" stroke="#77e6d7" stroke-width="3" stroke-dasharray="8 7" opacity=".8"/>
+            <g id="flyby-earth"><circle cx="0" cy="0" r="16" fill="#24689e" stroke="#8bd4f5" stroke-width="2"/><g transform="scale(.72)"><path d="M-20-7Q-12-24-2-17L4-12 0-5-7-7-11 0-19 2ZM2-3 10-10 20-6 17 2 11 4 9 13 3 19-1 10-7 5-5-1Z" fill="#73b98a"/><path d="M-24-12Q-10-28 9-22M-23 13Q-8 25 12 20" fill="none" stroke="#d4f4ff" stroke-width="2" opacity=".8"/></g><circle cx="0" cy="0" r="20" fill="none" stroke="#65c7e8" stroke-width="1" opacity=".65"/></g>
+            <g id="flyby-moon"><circle cx="0" cy="0" r="8" fill="#a9bac9" stroke="#e1e9ee" stroke-width="1.5"/><circle cx="-3" cy="-2" r="2" fill="#75899a"/><circle cx="3" cy="3" r="2.5" fill="#7e92a2"/><circle cx="2" cy="-4" r="1" fill="#8195a3"/></g>
             <g id="flyby-asteroids"></g>
-            <g id="flyby-ship"><path d="M0-11 7 7 0 4-7 7Z" fill="#d9e8ef" stroke="#fff4d5" stroke-width="1.2"/><path d="M-4 4 0 0 4 4M-2-4H2" fill="none" stroke="#587589" stroke-width="1"/><circle cy="-5" r="2" fill="#52d9f2"/><g fill="#ff8fc7"><circle cx="-3" cy="0" r="1.2"/><circle cx="3" cy="0" r="1.2"/><circle cy="3" r="1.2"/></g><text x="0" y="18" text-anchor="middle" fill="#ffe5ae" font-size="5">3 TEST DUMMIES</text></g>
+            <g id="flyby-ship"><path id="flyby-engine-flame" d="M-3 7 0 17 3 7Z" fill="#ff9a49" stroke="#ffe59a" stroke-width="1" visibility="hidden"/><path d="M0-11 7 7 0 4-7 7Z" fill="#d9e8ef" stroke="#fff4d5" stroke-width="1.2"/><path d="M-4 4 0 0 4 4M-2-4H2" fill="none" stroke="#587589" stroke-width="1"/><circle cy="-5" r="2" fill="#52d9f2"/><g fill="#ff8fc7"><circle cx="-3" cy="0" r="1.2"/><circle cx="3" cy="0" r="1.2"/><circle cy="3" r="1.2"/></g><text x="0" y="22" text-anchor="middle" fill="#ffe5ae" font-size="7">SURVEY ROCKET</text></g>
           </svg>
-          <div class="camera-title"><span>EARTH BASE</span><span>MOON ORBIT</span><span>TRACKING</span></div>
         </div>
         <div class="first-person">
           <div class="camera-title"><span>FIRST-PERSON NAVIGATION CAMERA</span><span>AVOID ASTEROIDS</span></div>
@@ -197,7 +197,7 @@ export class FlybyScene extends ChapterScene {
     updatePlanOutputs();
 
     content.querySelector<SVGGElement>('#flyby-asteroids')!.innerHTML = FLIGHT_ASTEROIDS.map((_, index) =>
-      `<g id="asteroid-${index}"><circle r="4" fill="#827b73" stroke="#c0b9a7" stroke-width="1"/><circle cx="-1" cy="-1" r="1" fill="#b9ada4"/></g>`,
+      `<g id="asteroid-${index}"><path d="M-12-5-6-12 3-11 12-4 10 7 3 12-8 9-13 2Z" fill="#827b73" stroke="#c0b9a7" stroke-width="1.8"/><path d="M-7-7-2-9 2-4-4-2ZM3 3 8 0 9 5 4 8Z" fill="#b9ada4" stroke="#68645f" stroke-width="1"/><circle cx="-8" cy="3" r="1.6" fill="#5b5855"/></g>`,
     ).join('');
     content.querySelector<SVGGElement>('#flyby-first-person-objects')!.innerHTML = FLIGHT_ASTEROIDS.map((_, index) =>
       `<g id="first-person-asteroid-${index}"><path d="M-7-5 0-9 8-3 5 6-3 8-9 2Z" fill="#9b938d" stroke="#d3c7b5" stroke-width="1"/></g>`,
@@ -206,19 +206,25 @@ export class FlybyScene extends ChapterScene {
     const updateDisplay = (): void => {
       const state = this.flightState;
       const speed = Math.hypot(state.vx, state.vy);
+      const flightActive = ['launching', 'cruise', 'returning'].includes(state.phase);
+      content.classList.toggle('flyby-flight-active', flightActive);
       const mapPoint = (point: { x: number; y: number }): { x: number; y: number } => ({
-        x: 18 + point.x / FLIGHT_WORLD.width * 324,
-        y: 12 + (FLIGHT_WORLD.height - point.y) / FLIGHT_WORLD.height * 176,
+        x: 18 + point.x / FLIGHT_WORLD.width * 964,
+        y: 12 + (FLIGHT_WORLD.height - point.y) / FLIGHT_WORLD.height * 146,
       });
       const earth = mapPoint(FLIGHT_WORLD.earth);
       const moon = mapPoint(FLIGHT_WORLD.moon);
       const ship = mapPoint(state);
+      const liveCamera = content.querySelector<SVGSVGElement>('#flyby-live-camera');
+      liveCamera?.setAttribute('viewBox', '0 0 1000 200');
       const earthElement = content.querySelector<SVGGElement>('#flyby-earth');
       const moonElement = content.querySelector<SVGGElement>('#flyby-moon');
       const shipElement = content.querySelector<SVGGElement>('#flyby-ship');
       earthElement?.setAttribute('transform', `translate(${earth.x.toFixed(1)} ${earth.y.toFixed(1)})`);
       moonElement?.setAttribute('transform', `translate(${moon.x.toFixed(1)} ${moon.y.toFixed(1)})`);
-      shipElement?.setAttribute('transform', `translate(${ship.x.toFixed(1)} ${ship.y.toFixed(1)}) rotate(${(90 - state.heading * 180 / Math.PI).toFixed(1)})`);
+      shipElement?.setAttribute('transform', `translate(${ship.x.toFixed(1)} ${ship.y.toFixed(1)}) rotate(${(90 - state.heading * 180 / Math.PI).toFixed(1)}) scale(1.5)`);
+      const engineFlame = content.querySelector<SVGPathElement>('#flyby-engine-flame');
+      engineFlame?.setAttribute('visibility', Object.values(this.heldControls).some(Boolean) ? 'visible' : 'hidden');
       FLIGHT_ASTEROIDS.forEach((asteroid, index) => {
         const point = mapPoint(asteroid);
         content.querySelector<SVGGElement>(`#asteroid-${index}`)?.setAttribute('transform', `translate(${point.x.toFixed(1)} ${point.y.toFixed(1)})`);

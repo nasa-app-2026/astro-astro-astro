@@ -41,6 +41,10 @@ body.mission-no-scroll .rover-panel {
   transform: translateX(-50%);
 }
 
+body.mission-no-scroll .rover-panel {
+  width: min(1200px, calc(100vw - 24px));
+}
+
 body.mission-no-scroll .flyby-panel > div,
 body.mission-no-scroll .rover-panel > div {
   display: grid;
@@ -48,6 +52,15 @@ body.mission-no-scroll .rover-panel > div {
   min-height: 0;
   grid-template-rows: auto auto auto minmax(90px, 1fr) auto auto auto;
   gap: 4px;
+}
+
+body.mission-no-scroll .rover-panel .cargo-flight-active {
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+body.mission-no-scroll .rover-panel .rover-driving-active {
+  position: relative;
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 body.mission-no-scroll .flyby-panel .eyebrow,
@@ -84,27 +97,52 @@ body.mission-no-scroll .rover-panel .mission-grid {
 }
 
 body.mission-no-scroll .flyby-panel .mission-grid {
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-  grid-template-rows: minmax(0, 1fr) 54px;
+  display: block;
+  position: relative;
+  min-height: 0;
+}
+
+body.mission-no-scroll .flyby-panel .flyby-flight-active {
+  grid-template-rows: minmax(0, 1fr) 5px auto;
+}
+
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .eyebrow,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > h2,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .intro,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .note,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > h3,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .science-list,
+body.mission-no-scroll .flyby-panel .flyby-flight-active > .message {
+  display: none;
 }
 
 body.mission-no-scroll .flyby-panel .camera {
-  grid-column: 1;
-  grid-row: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+body.mission-no-scroll .flyby-panel .camera {
+  overflow: hidden;
 }
 
 body.mission-no-scroll .flyby-panel .first-person {
-  grid-column: 1;
-  grid-row: 2;
+  display: none;
 }
 
 body.mission-no-scroll .flyby-panel .telemetry {
-  grid-column: 2;
-  grid-row: 1 / 3;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: stretch;
-  gap: 4px;
-  padding: 6px;
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  bottom: 8px;
+  left: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  background: #071827cf;
+  pointer-events: none;
 }
 
 body.mission-no-scroll .flyby-panel .camera-title,
@@ -114,8 +152,26 @@ body.mission-no-scroll .rover-panel .view-title {
 }
 
 body.mission-no-scroll .flyby-panel .camera svg {
-  height: calc(100% - 28px);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   max-height: none;
+}
+
+body.mission-no-scroll .flyby-panel .stat {
+  min-width: 0;
+  padding: 2px 3px;
+}
+
+body.mission-no-scroll .flyby-panel .stat span {
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+body.mission-no-scroll .flyby-panel .stat strong {
+  margin-top: 1px;
+  font-size: 9px;
+  white-space: nowrap;
 }
 
 body.mission-no-scroll .flyby-panel .first-person svg {
@@ -228,13 +284,67 @@ body.mission-no-scroll .flyby-panel .action-dock .plan input[type="range"] {
   height: 14px;
 }
 
-body.mission-no-scroll .rover-panel .views {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
+body.mission-no-scroll .rover-panel #cargo-flight-view {
+  display: block;
+  min-height: 0;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .camera {
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 body.mission-no-scroll .rover-panel .mission-grid {
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view {
+  display: block;
+  position: relative;
+  min-height: 0;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .camera {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .camera svg {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .telemetry {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  bottom: 8px;
+  left: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+  background: #071827cf;
+  pointer-events: none;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .stat {
+  min-width: 0;
+  padding: 2px 3px;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .stat span {
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+body.mission-no-scroll .rover-panel #rover-surface-view .stat strong {
+  margin-top: 1px;
+  font-size: 9px;
+  white-space: nowrap;
 }
 
 body.mission-no-scroll .rover-panel .telemetry {
@@ -244,10 +354,33 @@ body.mission-no-scroll .rover-panel .telemetry {
   padding: 6px;
 }
 
-body.mission-no-scroll .rover-panel .cargo-view svg,
-body.mission-no-scroll .rover-panel .views svg {
-  height: calc(100% - 24px);
+body.mission-no-scroll .rover-panel #cargo-flight-view svg,
+body.mission-no-scroll .rover-panel #rover-surface-view .camera svg {
+  height: 100%;
+  min-height: 0;
   max-height: none;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view .telemetry {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 3px;
+  padding: 3px;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view .stat {
+  min-width: 0;
+  padding: 2px 3px;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view .stat span {
+  font-size: 7px;
+  white-space: nowrap;
+}
+
+body.mission-no-scroll .rover-panel #cargo-flight-view .stat strong {
+  margin-top: 1px;
+  font-size: 9px;
+  white-space: nowrap;
 }
 
 body.mission-no-scroll .rover-panel #rover-jobs {
@@ -285,11 +418,22 @@ body.mission-no-scroll .rover-panel .jobs {
   body.mission-no-scroll .flyby-panel .science-list {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+
+  body.mission-no-scroll .flyby-panel .telemetry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.mission-no-scroll .rover-panel #cargo-flight-view .telemetry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.mission-no-scroll .rover-panel #rover-surface-view .telemetry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-height: 650px) {
-  body.mission-no-scroll .flyby-panel .science-list,
-  body.mission-no-scroll .rover-panel #rover-jobs {
+  body.mission-no-scroll .flyby-panel .science-list {
     display: none;
   }
 
@@ -306,8 +450,32 @@ body.mission-no-scroll .rover-panel .jobs {
     display: none;
   }
 
-  body.mission-no-scroll .flyby-panel .telemetry,
   body.mission-no-scroll .rover-panel .telemetry {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  body.mission-no-scroll .flyby-panel .telemetry {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 2px;
+    padding: 2px;
+  }
+
+  body.mission-no-scroll .flyby-panel .stat {
+    padding: 1px 2px;
+  }
+
+  body.mission-no-scroll .flyby-panel .stat span {
+    font-size: 6px;
+  }
+
+  body.mission-no-scroll .flyby-panel .stat strong {
+    margin-top: 1px;
+    font-size: 9px;
+  }
+}
+
+@media (max-height: 650px) and (max-width: 700px) {
+  body.mission-no-scroll .flyby-panel .telemetry {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
