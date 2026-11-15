@@ -8,13 +8,13 @@ In PowerShell, open a terminal in `C:\dev\astro-astro-astro` and run:
 
 ```powershell
 npm.cmd install
-npm.cmd run dev-nolog
+npm.cmd run dev
 ```
 
 Then open [http://localhost:8080](http://localhost:8080) in your browser. Press `Ctrl+C` in the terminal to stop the server.
 
 In other shells, use `npm` in place of `npm.cmd`.
-`npm run build-nolog` creates the production bundle in `dist/`.
+`npm run dev` and `npm run build` are safe to use and do not contact third-party servers. The `npm run dev-nolog` and `npm run build-nolog` variants still work; `npm run build` creates the production bundle in `dist/`.
 
 ## Project map
 
