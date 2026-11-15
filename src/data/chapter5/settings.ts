@@ -49,4 +49,11 @@ export const settings = Object.freeze({
   foodStartingWater: 5, // Game rule, made up for fun — litres
   experimentLampDays: 3, // Game rule, made up for fun — lamp days
   experimentScience: 3, // Game rule, made up for fun — points
+  iceStartingAir: 4.8, // Game rule, made up for fun — kg oxygen
+  iceStartingEnergy: 200, // Game rule, made up for fun — kWh
+  icePerDig: 6.6, // Game rule, made up for fun — kg ice
+  haworthIceMultiplier: 1.5, // Game rule, made up for fun — ice per dig
+  waterPerOxygen: 1.1, // Game rule, made up for fun — kg water per kg oxygen, approximate chemistry
+  oxygenPerSplit: 3, // Game rule, made up for fun — kg oxygen per action
+  iceMeltCost: 5, // Game rule, made up for fun — kWh per batch
 });

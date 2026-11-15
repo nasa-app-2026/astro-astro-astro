@@ -20,6 +20,8 @@ import { canYouHearUs, contactDays } from '../../data/chapter5/challenges/can-yo
 import { advanceContact, contactWarning, startContact, type ContactAction } from '../../rules/chapter5/can-you-hear-us';
 import { freshFood } from '../../data/chapter5/challenges/fresh-food';
 import { advanceFreshFood, startFreshFood, type FoodAction } from '../../rules/chapter5/fresh-food';
+import { iceToAir } from '../../data/chapter5/challenges/ice-to-air';
+import { advanceIceToAir, startIceToAir, type IceAction } from '../../rules/chapter5/ice-to-air';
 import './survival/site.css';
 
 export class SurvivalScene extends ChapterScene {
@@ -417,6 +419,52 @@ export class SurvivalScene extends ChapterScene {
       };
       render();
     };
+    const showIceToAir = () => {
+      const region = this.state.chosenRegion ?? 'haworth';
+      let state = startIceToAir(region, settings.stormChallengeSeed);
+      const render = () => {
+        heading(iceToAir.title);
+        const timeline = document.createElement('ol');
+        timeline.className = 'survival-light-timeline';
+        timeline.setAttribute('aria-label', 'Example light pattern');
+        for (let day = 1; day <= iceToAir.lengthDays; day++) {
+          const item = document.createElement('li'); item.textContent = `Day ${day}: ${isDark(day) ? 'dark' : 'sunny'}`; timeline.append(item);
+        }
+        panel.append(timeline);
+        paragraph('An example, not a forecast.');
+        const sidebar = document.createElement('div');
+        renderSidebar(sidebar, iceToAir.gauges, {
+          air: { value: state.air, capacity: settings.iceStartingAir },
+          energy: { value: state.energy, capacity: settings.iceStartingEnergy },
+          dose: { value: state.dose, capacity: chapter5Facts['radiation.careerLimit'].value },
+        }, state.science, getPlayerProfile().ageRange, settings.crewCount);
+        panel.append(sidebar);
+        if (state.message) paragraph(state.message);
+        if (state.ending) {
+          paragraph(state.ending === 'complete' ? 'Challenge complete!' : 'Mission ended early: the crew flew home safely.');
+          if (state.unknownDose) paragraph('Some event doses were unknown, so the dose total is incomplete.');
+          button('Back to challenges', showChallenges);
+          return;
+        }
+        paragraph(`Day ${state.day} of ${iceToAir.lengthDays}. Ice: ${state.ice} kg.`);
+        if (state.alerts.some(alert => alert.warningDay === state.day || alert.arrivalDay === state.day)) paragraph('Space weather alert: a moonwalk can add radiation dose.');
+        if (region === 'haworth') {
+          paragraph('One study found Haworth had the most ice-friendly ground; this training rule gives 1.5 times as much ice per dig.');
+          panel.append(factElement('moonPlaces.iceFriendlyGround'));
+        }
+        paragraph(`Melt and split: ${iceToAir.waterPerBatch} kg water makes ${settings.oxygenPerSplit} kg oxygen for ${iceToAir.energyPerBatch} kWh, including melting. The water amount is an approximate training rule.`);
+        const actions: { id: IceAction; title: string }[] = [
+          { id: 'dig', title: 'Dig ice' }, { id: 'split', title: 'Melt and split' },
+          { id: 'lab', title: 'Lab science' }, { id: 'rest', title: 'Rest' },
+        ];
+        for (const action of actions) {
+          const item = button(action.title, () => { state = advanceIceToAir(state, action.id); render(); });
+          if (action.id === 'split') item.disabled = state.ice < iceToAir.waterPerBatch;
+        }
+        panel.append(factElement('moonPlaces.iceUses'), factElement('lifeSupport.splitWater'), factElement('lifeSupport.oxygenEnergyMinimum'), factElement('lifeSupport.oxygenEnergyModel'));
+      };
+      render();
+    };
     const showChallenges = () => {
       heading('Choose a training challenge');
       const region = regions.find((entry) => entry.id === this.state.chosenRegion);
@@ -426,6 +474,7 @@ export class SurvivalScene extends ChapterScene {
       button('Begin Storm alert', showStormPlanning);
       button('Begin Can you hear us?', showContact);
       button('Begin Fresh food', showFreshFood);
+      button('Begin Ice to air', showIceToAir);
       button('Back to regions', showRegions);
     };
     const showRegions = () => {

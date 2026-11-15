@@ -22,6 +22,39 @@ import { contactDays } from '../../data/chapter5/challenges/can-you-hear-us';
 import { advanceContact, contactWarning, startContact } from '../../rules/chapter5/can-you-hear-us';
 import { freshFood } from '../../data/chapter5/challenges/fresh-food';
 import { advanceFreshFood, startFreshFood } from '../../rules/chapter5/fresh-food';
+import { iceToAir } from '../../data/chapter5/challenges/ice-to-air';
+import { advanceIceToAir, startIceToAir } from '../../rules/chapter5/ice-to-air';
+
+describe('Ice to air', () => {
+  it('digs extra ice at Haworth and converts water to oxygen using energy', () => {
+    const normal = advanceIceToAir(startIceToAir('nobile-rim-2', 42, []), 'dig');
+    const haworth = advanceIceToAir(startIceToAir('haworth', 42, []), 'dig');
+    expect(normal.ice).toBe(6.6);
+    expect(haworth.ice).toBe(9.9);
+    expect(iceToAir.waterPerBatch).toBe(3.3);
+    expect(iceToAir.energyPerBatch).toBe(47);
+    const split = advanceIceToAir(normal, 'split');
+    expect(split.ice).toBe(3.3);
+    expect(split.air).toBe(4.6);
+    expect(split.energy).toBe(187);
+  });
+  it('completes by digging early and splitting on sunny days', () => {
+    let state = startIceToAir('nobile-rim-2', 42, []);
+    for (const action of ['dig', 'split', 'rest', 'rest', 'split', 'rest'] as const) state = advanceIceToAir(state, action);
+    expect(state.ending).toBe('complete');
+    expect(state.air).toBe(1.2);
+  });
+  it('ends safely without digging and refuses a split without ice', () => {
+    let state = startIceToAir('haworth', 42, []);
+    expect(() => advanceIceToAir(state, 'split')).toThrow('Not enough ice');
+    while (!state.ending) state = advanceIceToAir(state, 'rest');
+    expect(state.ending).toBe('air');
+  });
+  it('applies space-weather walk-back risk on a dig', () => {
+    const alerts = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S4' as const }];
+    expect(advanceIceToAir(startIceToAir('haworth', 42, alerts), 'dig').ending).toBe('space-weather');
+  });
+});
 
 describe('Fresh food', () => {
   it('calculates food, lamp energy, plant yield and recovered water from facts', () => {
