@@ -65,6 +65,8 @@ const panelStyles = `
   .flyby-panel #flyby-earth{animation:planet-glow 4s ease-in-out infinite}
   .flyby-panel.flyby-launching #flyby-ship{transform-box:fill-box;transform-origin:center;animation:flyby-liftoff 2s cubic-bezier(.2,.7,.3,1) both}
   .flyby-panel.flyby-launching #flyby-engine-flame{visibility:visible!important}
+  .flyby-panel #flyby-ship{filter:drop-shadow(0 0 3px #78e7ffb8)}
+  .flyby-panel #flyby-ship circle:first-of-type{animation:rocket-beacon 1.4s ease-in-out infinite}
   .flyby-panel #flyby-moon{transform-box:fill-box;transform-origin:center;animation:moon-drift 7s ease-in-out infinite}
   .flyby-panel #flyby-path{animation:path-flow 1.2s linear infinite}
   .flyby-panel .camera-title span:last-child{animation:status-blink 2s ease-in-out infinite}
@@ -75,6 +77,7 @@ const panelStyles = `
   @keyframes engine-flicker{to{transform:scaleY(1.45);opacity:.7}}
   @keyframes planet-glow{50%{filter:drop-shadow(0 0 8px #4eafff99)}}
   @keyframes flyby-liftoff{0%{translate:-7px 24px;scale:.78}45%{translate:3px -12px;scale:1.08}100%{translate:0 0;scale:1}}
+  @keyframes rocket-beacon{50%{fill:#b9faff;filter:drop-shadow(0 0 3px #42eaff)}}
   @keyframes moon-drift{50%{translate:0 -2px}}
   @keyframes path-flow{to{stroke-dashoffset:-30}}
   @keyframes status-blink{50%{opacity:.55}}
@@ -134,12 +137,28 @@ export class FlybyScene extends ChapterScene {
             <g fill="#e1f4ff" opacity=".8"><circle cx="24" cy="24" r="1"/><circle cx="128" cy="18" r="1.2"/><circle cx="220" cy="32" r=".9"/><circle cx="330" cy="18" r="1"/><circle cx="505" cy="174" r="1.1"/><circle cx="58" cy="105" r=".8"/><circle cx="420" cy="72" r="1.1"/><circle cx="740" cy="35" r="1.2"/><circle cx="925" cy="112" r="1.1"/></g>
             <path d="M102 142Q440 160 790 76" fill="none" stroke="#8fb5ca" stroke-width="1" stroke-dasharray="5 9" opacity=".28"/>
             <polyline id="flyby-path" points="" fill="none" stroke="#77e6d7" stroke-width="3" stroke-dasharray="8 7" opacity=".8"/>
-            <ellipse id="flyby-orbit-guide" cx="780" cy="78" rx="42" ry="27"/>
-            <text id="flyby-orbit-label" x="780" y="43" fill="#f2d18b" font-size="8" text-anchor="middle">REQUIRED LUNAR ORBIT · 0%</text>
-            <g id="flyby-earth"><circle cx="0" cy="0" r="16" fill="#24689e" stroke="#8bd4f5" stroke-width="2"/><g transform="scale(.72)"><path d="M-20-7Q-12-24-2-17L4-12 0-5-7-7-11 0-19 2ZM2-3 10-10 20-6 17 2 11 4 9 13 3 19-1 10-7 5-5-1Z" fill="#73b98a"/><path d="M-24-12Q-10-28 9-22M-23 13Q-8 25 12 20" fill="none" stroke="#d4f4ff" stroke-width="2" opacity=".8"/></g><circle cx="0" cy="0" r="20" fill="none" stroke="#65c7e8" stroke-width="1" opacity=".65"/></g>
-            <g id="flyby-moon"><circle cx="0" cy="0" r="8" fill="#a9bac9" stroke="#e1e9ee" stroke-width="1.5"/><circle cx="-3" cy="-2" r="2" fill="#75899a"/><circle cx="3" cy="3" r="2.5" fill="#7e92a2"/><circle cx="2" cy="-4" r="1" fill="#8195a3"/></g>
+            <ellipse id="flyby-orbit-guide" cx="780" cy="113" rx="135" ry="22"/>
+            <path d="M646 107 652 103 651 110ZM914 119 908 123 909 116Z" fill="#f2d18b" opacity=".9"/>
+            <text id="flyby-orbit-label" x="780" y="84" fill="#f2d18b" font-size="8" text-anchor="middle">REQUIRED ORBIT · 0%</text>
+            <g id="flyby-earth"><circle cx="0" cy="0" r="60" fill="#24689e" stroke="#8bd4f5" stroke-width="2"/><g transform="scale(2.35)"><path d="M-20-7Q-12-24-2-17L4-12 0-5-7-7-11 0-19 2ZM2-3 10-10 20-6 17 2 11 4 9 13 3 19-1 10-7 5-5-1Z" fill="#73b98a"/><path d="M-24-12Q-10-28 9-22M-23 13Q-8 25 12 20" fill="none" stroke="#d4f4ff" stroke-width="2" opacity=".8"/></g><circle cx="0" cy="0" r="63" fill="none" stroke="#65c7e8" stroke-width="1.5" opacity=".65"/></g>
+            <g id="flyby-moon"><circle cx="0" cy="0" r="20" fill="#a9bac9" stroke="#e1e9ee" stroke-width="1.5"/><circle cx="-7" cy="-5" r="5" fill="#75899a"/><circle cx="9" cy="9" r="6" fill="#7e92a2"/><circle cx="5" cy="-13" r="3" fill="#8195a3"/><path d="M-15 10Q-8 5-4 14M8-2Q15-8 18-1" fill="none" stroke="#dce4e6" stroke-width="1.5"/></g>
             <g id="flyby-asteroids"></g>
-            <g id="flyby-ship"><path id="flyby-engine-flame" d="M-3 7 0 17 3 7Z" fill="#ff9a49" stroke="#ffe59a" stroke-width="1" visibility="hidden"/><path d="M0-11 7 7 0 4-7 7Z" fill="#d9e8ef" stroke="#fff4d5" stroke-width="1.2"/><path d="M-4 4 0 0 4 4M-2-4H2" fill="none" stroke="#587589" stroke-width="1"/><circle cy="-5" r="2" fill="#52d9f2"/><g fill="#ff8fc7"><circle cx="-3" cy="0" r="1.2"/><circle cx="3" cy="0" r="1.2"/><circle cy="3" r="1.2"/></g><text x="0" y="22" text-anchor="middle" fill="#ffe5ae" font-size="7">SURVEY ROCKET</text></g>
+            <g id="flyby-ship">
+              <path id="flyby-engine-flame" d="M-4 10Q0 14-2 24L0 29 2 24Q0 14 4 10Z" fill="#ff9a49" stroke="#ffe59a" stroke-width="1" visibility="hidden"/>
+              <path d="M-8 8-12 13-8 15H8L12 13 8 8Z" fill="#4b5c65" stroke="#f5e4c2" stroke-width="1"/>
+              <path d="M-6 7H6L4 10H-4Z" fill="#f2c66d" opacity=".9"/>
+              <path d="M-10 8-17 14-11 15M10 8 17 14 11 15" fill="#d26746" stroke="#f3d9a6" stroke-width="1"/>
+              <path d="M-7 8-9-4-7-10-4-15 0-19 4-15 7-10 9-4 7 8Z" fill="#d9e8ef" stroke="#fff4d5" stroke-width="1.5"/>
+              <path d="M-7 1H7M-8 6H8M-6-8H6" fill="none" stroke="#778b94" stroke-width=".8"/>
+              <path d="M-5-11-3-15 0-17 3-15 5-11Z" fill="#f4e8d2" stroke="#fff9e8" stroke-width=".8"/>
+              <path d="M-3-11Q0-14 3-11L2-8H-2Z" fill="#42c5dc" stroke="#d3ffff" stroke-width=".7"/>
+              <path d="M-8-5-13-2-9 1M8-5 13-2 9 1" fill="#c15c43" stroke="#f3d9a6" stroke-width=".8"/>
+              <path d="M-6-3H-3M3-3H6M-5 3H5" stroke="#607985" stroke-width=".7"/>
+              <path d="M-5 8V11M5 8V11M-5 11H5" fill="none" stroke="#e7c77b" stroke-width="1"/>
+              <path d="M-1 6H1V8H-1Z" fill="#f2c66d"/>
+              <circle cx="-5" cy="5" r="1" fill="#ff8fc7"/><circle cx="5" cy="5" r="1" fill="#ff8fc7"/>
+              <text x="0" y="20" text-anchor="middle" fill="#ffe5ae" font-size="5">SURVEY • 01</text>
+            </g>
           </svg>
         </div>
         <div class="telemetry">
@@ -221,7 +240,7 @@ export class FlybyScene extends ChapterScene {
       content.classList.toggle('flyby-flight-active', flightActive);
       const mapPoint = (point: { x: number; y: number }): { x: number; y: number } => ({
         x: 18 + point.x / FLIGHT_WORLD.width * 964,
-        y: 12 + (FLIGHT_WORLD.height - point.y) / FLIGHT_WORLD.height * 146,
+        y: 72 + (FLIGHT_WORLD.height - point.y) / FLIGHT_WORLD.height * 92,
       });
       const earth = mapPoint(FLIGHT_WORLD.earth);
       const moon = mapPoint(FLIGHT_WORLD.moon);
@@ -233,12 +252,12 @@ export class FlybyScene extends ChapterScene {
       const shipElement = content.querySelector<SVGGElement>('#flyby-ship');
       earthElement?.setAttribute('transform', `translate(${earth.x.toFixed(1)} ${earth.y.toFixed(1)})`);
       moonElement?.setAttribute('transform', `translate(${moon.x.toFixed(1)} ${moon.y.toFixed(1)})`);
-      shipElement?.setAttribute('transform', `translate(${ship.x.toFixed(1)} ${ship.y.toFixed(1)}) rotate(${(90 - state.heading * 180 / Math.PI).toFixed(1)}) scale(1.5)`);
+      shipElement?.setAttribute('transform', `translate(${ship.x.toFixed(1)} ${ship.y.toFixed(1)}) rotate(${(90 - state.heading * 180 / Math.PI).toFixed(1)}) scale(.42)`);
       const engineFlame = content.querySelector<SVGPathElement>('#flyby-engine-flame');
       engineFlame?.setAttribute('visibility', Object.values(this.heldControls).some(Boolean) ? 'visible' : 'hidden');
       FLIGHT_ASTEROIDS.forEach((asteroid, index) => {
         const point = mapPoint(asteroid);
-        content.querySelector<SVGGElement>(`#asteroid-${index}`)?.setAttribute('transform', `translate(${point.x.toFixed(1)} ${point.y.toFixed(1)})`);
+        content.querySelector<SVGGElement>(`#asteroid-${index}`)?.setAttribute('transform', `translate(${point.x.toFixed(1)} ${point.y.toFixed(1)}) scale(${(asteroid.radius / 18 * .45).toFixed(2)})`);
       });
       const pathPoints = state.path.map((point) => {
         const mapped = mapPoint(point);

@@ -135,9 +135,9 @@ export function launchRoverMission(state: RobotsState): RobotsState {
   };
 }
 
-export function stepCargoFlight(state: RobotsState, controls: CargoControls, deltaSeconds: number): RobotsState {
+function stepCargoFlightFrame(state: RobotsState, controls: CargoControls, deltaSeconds: number): RobotsState {
   if (state.phase !== 'transfer' && state.phase !== 'approach') return state;
-  const dt = Math.max(0, Math.min(deltaSeconds, 0.08));
+  const dt = Math.max(0, Math.min(deltaSeconds, 1 / 60));
   if (dt === 0) return state;
   let horizontal = Number(controls.right) - Number(controls.left);
   let vertical = Number(controls.down) - Number(controls.up);
@@ -150,36 +150,35 @@ export function stepCargoFlight(state: RobotsState, controls: CargoControls, del
   let vx = state.vx + horizontal * 28 * fuelScale * dt;
   let vy = state.vy + vertical * 28 * fuelScale * dt;
 
-  const earthDx = CARGO_WORLD.earth.x - state.x;
-  const earthDy = CARGO_WORLD.earth.y - state.y;
-  const earthDistance = Math.hypot(earthDx, earthDy);
-  if (earthDistance < 220 && earthDistance > 0) {
-    const earthGravity = 4 * (1 - earthDistance / 220);
-    vx += earthDx / earthDistance * earthGravity * dt;
-    vy += earthDy / earthDistance * earthGravity * dt;
-  }
-  const dx = CARGO_WORLD.moon.x - state.x;
-  const dy = CARGO_WORLD.moon.y - state.y;
-  const moonDistance = Math.hypot(dx, dy);
-  if (moonDistance < 260 && moonDistance > CARGO_WORLD.moon.radius) {
-    const gravity = 12 * (260 - moonDistance) / 180;
-    vx += dx / moonDistance * gravity * dt;
-    vy += dy / moonDistance * gravity * dt;
-  }
-  const drag = Math.pow(thrust ? 0.998 : 0.98, dt * 60);
+  const addGravity = (body: { x: number; y: number }, radius: number, strength: number, range: number, cap: number): void => {
+    const dx = body.x - state.x;
+    const dy = body.y - state.y;
+    const r2 = dx * dx + dy * dy;
+    const r = Math.sqrt(r2);
+    if (r === 0 || r >= range) return;
+    const gravity = r < radius
+      ? cap * r / radius
+      : Math.min(cap, strength / Math.max(r2, radius * radius));
+    vx += dx / r * gravity * dt;
+    vy += dy / r * gravity * dt;
+  };
+  addGravity(CARGO_WORLD.earth, 75, 26000, 230, 4.5);
+  addGravity(CARGO_WORLD.moon, CARGO_WORLD.moon.radius, 8500, 260, 2.2);
+  const drag = Math.exp(-(thrust > 0 ? 0.06 : 1.3) * dt);
   vx *= drag;
   vy *= drag;
   const speed = Math.hypot(vx, vy);
-  const maxSpeed = 10 + state.fuel * 0.9;
+  const maxSpeed = 18 + state.fuel * 0.72;
   if (speed > maxSpeed) {
     vx = vx / speed * maxSpeed;
     vy = vy / speed * maxSpeed;
   }
   const x = Math.max(0, Math.min(CARGO_WORLD.width, state.x + vx * dt));
   const y = Math.max(0, Math.min(CARGO_WORLD.height, state.y + vy * dt));
-  const phase: RobotsPhase = moonDistance < 190 ? 'approach' : state.phase;
   const point = { x, y };
-  const asteroid = CARGO_ASTEROIDS.find((rock) => distance(point, rock) < rock.radius + 8);
+  const phase: RobotsPhase = distance(point, CARGO_WORLD.moon) < 190 ? 'approach' : state.phase;
+  // Keep the collision envelope close to the drawn asteroid and add only a small hull margin.
+  const asteroid = CARGO_ASTEROIDS.find((rock) => distance(point, rock) < rock.radius * 0.65 + 5);
   const crashed = Boolean(asteroid) || distance(point, CARGO_WORLD.moon) < CARGO_WORLD.moon.radius;
   const signal = Math.hypot(x - CARGO_WORLD.earth.x, y - CARGO_WORLD.earth.y) > 500 ? 45 : 100;
   const path = state.path;
@@ -207,6 +206,16 @@ export function stepCargoFlight(state: RobotsState, controls: CargoControls, del
             ? `Cargo rocket moving at ${Math.hypot(vx, vy).toFixed(1)} m/s.`
             : state.message,
   };
+}
+
+export function stepCargoFlight(state: RobotsState, controls: CargoControls, deltaSeconds: number): RobotsState {
+  const total = Math.max(0, Math.min(deltaSeconds, 0.25));
+  if (total === 0) return state;
+  const frames = Math.max(1, Math.ceil(total / (1 / 60)));
+  const dt = total / frames;
+  let next = state;
+  for (let frame = 0; frame < frames; frame += 1) next = stepCargoFlightFrame(next, controls, dt);
+  return next;
 }
 
 export function landCargoRocket(state: RobotsState): RobotsState {
@@ -263,7 +272,8 @@ export function stepRover(state: RobotsState, controls: RoverControls, deltaSeco
   const ax = Math.cos(heading) * drive * 18 * traction;
   const ay = Math.sin(heading) * drive * 18 * traction;
   const bump = Math.sin(state.x * 1.7 + state.y * 2.3) * roughness * Math.min(speedBeforeTurn, 12) * 0.035;
-  const drag = Math.pow(drive ? 0.996 - roughness * 0.003 : 0.98, dt * 60);
+  // Wheel traction is strongest on the ridge; loose crater regolith adds rolling resistance.
+  const drag = Math.exp(-(drive ? 0.12 + roughness * 0.45 : 0.9 + roughness * 0.25) * dt);
   let vx = (state.vx + (ax + bump) * dt) * drag;
   let vy = (state.vy + (ay - bump * 0.45) * dt) * drag;
   const speed = Math.hypot(vx, vy);

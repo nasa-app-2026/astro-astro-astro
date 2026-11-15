@@ -46,6 +46,22 @@ describe('piloted rover cargo mission', () => {
     expect(downward.y).toBeGreaterThan(flight.y);
   });
 
+  it('keeps cargo-rocket diagonal thrust normalized and frame-rate stable', () => {
+    const flight = {
+      ...launchRoverMission(chooseRoverSite(initialRobotsState, ROVER_SITES.sunnyRidge)),
+      x: 450,
+      y: 300,
+    };
+    const vertical = stepCargoFlight(flight, { ...idleCargo, up: true }, 1 / 60);
+    const diagonal = stepCargoFlight(flight, { ...idleCargo, up: true, right: true }, 1 / 60);
+    expect(Math.hypot(diagonal.vx, diagonal.vy)).toBeCloseTo(Math.hypot(vertical.vx, vertical.vy), 1);
+    let severalFrames = flight;
+    for (let i = 0; i < 6; i += 1) severalFrames = stepCargoFlight(severalFrames, { ...idleCargo, up: true }, 1 / 60);
+    const singleFrameBatch = stepCargoFlight(flight, { ...idleCargo, up: true }, 0.1);
+    expect(singleFrameBatch.x).toBeCloseTo(severalFrames.x, 3);
+    expect(singleFrameBatch.y).toBeCloseTo(severalFrames.y, 3);
+  });
+
   it('lets Earth and Moon gravity pull the cargo rocket in toward each body', () => {
     const flight = launchRoverMission(chooseRoverSite(initialRobotsState, ROVER_SITES.sunnyRidge));
     const nearEarth = stepCargoFlight({ ...flight, x: 130, y: CARGO_WORLD.earth.y }, idleCargo, 0.08);
@@ -81,6 +97,18 @@ describe('piloted rover cargo mission', () => {
       y: CARGO_ASTEROIDS[0].y,
     };
     expect(stepCargoFlight(flight, idleCargo, 0.08).phase).toBe('crashed');
+  });
+
+  it('allows the cargo rocket to safely pass close beside an asteroid', () => {
+    const rock = CARGO_ASTEROIDS[0];
+    const nearMiss = {
+      ...launchRoverMission(chooseRoverSite(initialRobotsState, ROVER_SITES.sunnyRidge)),
+      x: rock.x - 24,
+      y: rock.y,
+      vx: 0,
+      vy: 0,
+    };
+    expect(stepCargoFlight(nearMiss, idleCargo, 0.01).phase).toBe('transfer');
   });
 
   it('auto-brakes the cargo rocket when the player releases the thrusters', () => {

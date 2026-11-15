@@ -10,12 +10,15 @@ test('choose a lunar site, pilot the cargo rocket with natural arrow directions,
   await expect(page.getByRole('button', { name: /select shadowed crater/i })).toBeVisible();
   await page.getByRole('button', { name: /select shadowed crater/i }).click();
   await expect(page.locator('#rover-surface-view')).toHaveAttribute('data-site', 'shadowedCrater');
-  await expect(page.locator('#rover-wheels rect')).toHaveCount(6);
+  await expect(page.locator('#rover-wheels .rover-wheel')).toHaveCount(6);
   await expect(page.locator('#rover-solar-arrays')).toBeVisible();
   await expect(page.locator('#rover-stereo-camera')).toBeVisible();
   await expect(page.locator('#sunny-ridge-terrain')).toHaveCount(1);
   await expect(page.locator('#shadow-crater-terrain')).toHaveCount(1);
   await page.getByRole('button', { name: /launch the rover rocket/i }).click();
+  expect(Number(await page.locator('#cargo-earth circle').getAttribute('r'))).toBe(75);
+  expect(Number(await page.locator('#cargo-moon circle').getAttribute('r'))).toBe(25);
+  await expect(page.locator('#cargo-ship')).toHaveAttribute('transform', /scale\(\.3\)/);
   await expect(page.locator('.rover-panel')).toHaveClass(/cargo-takeoff/);
   await expect(page.locator('#rover-deployment-cinematic')).toHaveAttribute('visibility', 'hidden');
 

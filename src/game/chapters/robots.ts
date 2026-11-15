@@ -94,9 +94,7 @@ const panelStyles = `
   .rover-panel #cargo-ship .rocket-decals{fill:#e8bf69;font:4px Arial,sans-serif;letter-spacing:.5px}
   .rover-panel #cargo-flight-path{animation:path-dash 1.2s linear infinite}
   .rover-panel #rover-map-ship{transform-box:fill-box;transform-origin:center;transition:transform .08s linear}
-  .rover-panel #rover-map-ship > g:first-child rect{transform-box:fill-box;transform-origin:center;animation:wheel-turn .45s linear infinite}
-  .rover-panel #rover-map-ship > g:nth-child(2){stroke-dasharray:2 2;animation:tread-scroll .35s linear infinite}
-  .rover-panel #rover-map-ship > path:nth-of-type(2){transform-box:fill-box;transform-origin:center;animation:rover-suspension .8s ease-in-out infinite alternate}
+  .rover-panel.rover-moving #rover-map-ship > path:nth-of-type(2){transform-box:fill-box;transform-origin:center;animation:rover-suspension .8s ease-in-out infinite alternate}
   .rover-panel #rover-parking-pad{animation:pad-pulse 2s ease-in-out infinite}
   .rover-panel #rover-water-job.done,.rover-panel #rover-photo-job.done,.rover-panel #rover-map-job.done{animation:job-pop .35s ease-out}
   @keyframes rock-drift{to{translate:0 -6px;rotate:10deg}}
@@ -104,8 +102,6 @@ const panelStyles = `
   @keyframes path-dash{to{stroke-dashoffset:-30}}
   @keyframes pad-pulse{50%{opacity:.55}}
   @keyframes job-pop{50%{transform:scale(1.04)}}
-  @keyframes wheel-turn{to{rotate:360deg}}
-  @keyframes tread-scroll{to{stroke-dashoffset:-8}}
   @keyframes rover-suspension{to{translate:0 1.5px}}
   @keyframes rocket-touchdown{0%{translate:0 -46px;rotate:-4deg}65%{translate:0 3px;rotate:1deg}82%{translate:0 -4px;rotate:-.5deg}100%{translate:0 0;rotate:0}}
   @keyframes cargo-liftoff{0%{translate:-12px 38px;scale:.72}42%{translate:6px -28px;scale:1.08}100%{translate:0 0;scale:1}}
@@ -138,6 +134,7 @@ const roverPhases = ['driving', 'complete'] as const;
 export class RobotsScene extends ChapterScene {
   private roverState: RobotsState = { ...initialRobotsState };
   private deployingRover = false;
+  private wheelRotationDegrees = 0;
   private readonly cargoControls: CargoControls = { ...cargoControlsTemplate };
   private readonly roverControls: RoverControls = { ...roverControlsTemplate };
   private renderMission: (() => void) | undefined;
@@ -182,8 +179,8 @@ export class RobotsScene extends ChapterScene {
           </g>
           <path d="M164 121Q455 205 770 310" fill="none" stroke="#9cbdd0" stroke-width="1" stroke-dasharray="3 9" opacity=".28"/>
           <polyline id="cargo-flight-path" points="" fill="none" stroke="#77e6d7" stroke-width="3" stroke-dasharray="8 7" opacity=".8"/>
-          <g id="cargo-earth"><circle r="64" fill="#24689e" stroke="#8bd4f5" stroke-width="4"/><path d="M-46-17Q-28-58-5-42L13-30 3-13-15-17-25 3-46 5ZM4-7 24-27 49-16 42 5 27 9 22 32 7 47-3 25-18 12-13-3Z" fill="#73b98a"/><path d="M-55-29Q-22-66 23-53M-52 30Q-18 57 31 48" fill="none" stroke="#d4f4ff" stroke-width="4" opacity=".8"/></g>
-          <g id="cargo-moon"><circle r="22" fill="#a9bac9" stroke="#e1e9ee" stroke-width="2"/><circle cx="-7" cy="-5" r="5" fill="#75899a"/><circle cx="9" cy="8" r="6" fill="#7e92a2"/></g>
+          <g id="cargo-earth"><circle r="75" fill="#24689e" stroke="#8bd4f5" stroke-width="4"/><path d="M-54-20Q-33-68-6-49L15-35 4-15-17-20-29 4-54 6ZM5-8 28-31 58-19 49 6 32 11 26 38 9 55-4 30-21 14-15-4Z" fill="#73b98a"/><path d="M-64-34Q-26-77 27-61M-60 35Q-21 66 36 56" fill="none" stroke="#d4f4ff" stroke-width="4" opacity=".8"/></g>
+          <g id="cargo-moon"><circle r="25" fill="#a9bac9" stroke="#e1e9ee" stroke-width="2"/><circle cx="-8" cy="-6" r="5" fill="#75899a"/><circle cx="10" cy="9" r="6" fill="#7e92a2"/><circle cx="3" cy="-14" r="3" fill="#8999a2"/><path d="M-20 10Q-10 4-5 14M8-2Q15-8 21-1" fill="none" stroke="#e2e7e6" stroke-width="1.5"/></g>
           <g id="cargo-site" fill="none" stroke="#ffcf71" stroke-width="3"><circle r="14"/><path d="M-24 0H24M0-24V24"/></g>
           <g id="cargo-asteroids"></g>
           <g id="rover-deployment-cinematic" visibility="hidden" aria-label="Rover rolling down the lander ramp">
@@ -295,16 +292,13 @@ export class RobotsScene extends ChapterScene {
             </g>
             <text x="64" y="126" fill="#fff0d3" font-size="7">LANDER</text>
             <g id="rover-map-ship" transform="translate(300 170)" stroke-linejoin="round">
-              <g id="rover-wheels" fill="#20282d" stroke="#d8d0c0" stroke-width="1.2">
-                <rect x="-18" y="-17" width="6" height="9" rx="3"/><rect x="12" y="-17" width="6" height="9" rx="3"/>
-                <rect x="-18" y="-4" width="6" height="9" rx="3"/><rect x="12" y="-4" width="6" height="9" rx="3"/>
-                <rect x="-18" y="9" width="6" height="9" rx="3"/><rect x="12" y="9" width="6" height="9" rx="3"/>
-              </g>
-              <g stroke="#77817e" stroke-width=".8"><path d="M-15-16V-9M-15-3V4M-15 10V17M15-16V-9M15-3V4M15 10V17"/></g>
-              <g fill="#8d9a96" stroke="#e0d5bd" stroke-width=".7">
-                <circle cx="-15" cy="-12.5" r="1.6"/><circle cx="15" cy="-12.5" r="1.6"/>
-                <circle cx="-15" cy=".5" r="1.6"/><circle cx="15" cy=".5" r="1.6"/>
-                <circle cx="-15" cy="13.5" r="1.6"/><circle cx="15" cy="13.5" r="1.6"/>
+              <g id="rover-wheels" fill="#20282d" stroke="#d8d0c0" stroke-width="1">
+                <g class="rover-wheel" data-center="-15,-12.5" transform="translate(-15 -12.5)"><ellipse rx="3" ry="4.5"/><path d="M-2-3 2-1M-3 0H3M-2 3 2 1" fill="none" stroke="#8d9a96" stroke-width=".8"/><circle r="1.1" fill="#d8c9a7"/></g>
+                <g class="rover-wheel" data-center="15,-12.5" transform="translate(15 -12.5)"><ellipse rx="3" ry="4.5"/><path d="M-2-3 2-1M-3 0H3M-2 3 2 1" fill="none" stroke="#8d9a96" stroke-width=".8"/><circle r="1.1" fill="#d8c9a7"/></g>
+                <g class="rover-wheel" data-center="-15,0.5" transform="translate(-15 .5)"><ellipse rx="3" ry="4.5"/><path d="M-2-3 2-1M-3 0H3M-2 3 2 1" fill="none" stroke="#8d9a96" stroke-width=".8"/><circle r="1.1" fill="#d8c9a7"/></g>
+                <g class="rover-wheel" data-center="15,0.5" transform="translate(15 .5)"><ellipse rx="3" ry="4.5"/><path d="M-2-3 2-1M-3 0H3M-2 3 2 1" fill="none" stroke="#8d9a96" stroke-width=".8"/><circle r="1.1" fill="#d8c9a7"/></g>
+                <g class="rover-wheel" data-center="-15,13.5" transform="translate(-15 13.5)"><ellipse rx="3" ry="4.5"/><path d="M-2-3 2-1M-3 0H3M-2 3 2 1" fill="none" stroke="#8d9a96" stroke-width=".8"/><circle r="1.1" fill="#d8c9a7"/></g>
+                <g class="rover-wheel" data-center="15,13.5" transform="translate(15 13.5)"><ellipse rx="3" ry="4.5"/><path d="M-2-3 2-1M-3 0H3M-2 3 2 1" fill="none" stroke="#8d9a96" stroke-width=".8"/><circle r="1.1" fill="#d8c9a7"/></g>
               </g>
               <g fill="none" stroke="#d6b77d" stroke-width="1.3"><path d="M-12-10-9-7M12-10 9-7M-12 2-9 1M12 2 9 1M-12 14-9 10M12 14 9 10"/><path d="M-9-9V-5M9-9V-5M-9 4V8M9 4V8" stroke="#8ce9db" stroke-width=".8"/></g>
               <path d="M-12-15-8-19 8-19 12-15 11 12 6 18-6 18-11 12Z" fill="#d7cdb5" stroke="#fff0d3" stroke-width="1.6"/>
@@ -380,7 +374,7 @@ export class RobotsScene extends ChapterScene {
 
     const flightAsteroids = content.querySelector<SVGGElement>('#cargo-asteroids')!;
     flightAsteroids.innerHTML = CARGO_ASTEROIDS.map((asteroid) =>
-      `<g transform="translate(${asteroid.x} ${asteroid.y}) scale(${(asteroid.radius / 18).toFixed(2)})">
+      `<g transform="translate(${asteroid.x} ${asteroid.y}) scale(${(asteroid.radius / 18 * 0.45).toFixed(2)})">
         <ellipse cy="14" rx="19" ry="5" fill="#020914" opacity=".45"/>
         <path d="M-16-5-8-16 4-18 17-8 15 7 6 16-9 13-18 4Z" fill="#827b73" stroke="#d0c6b7" stroke-width="2"/>
         <path d="m-8-12 8-2 5 6-7 4ZM5 4l8-5 2 7-7 7-6-3Z" fill="#a9a092" stroke="#68645f" stroke-width="1.5"/>
@@ -391,6 +385,7 @@ export class RobotsScene extends ChapterScene {
     const updateDisplay = (): void => {
       const state = this.roverState;
       const speed = Math.hypot(state.vx, state.vy);
+      content.classList.toggle('rover-moving', state.phase === 'driving' && speed > 0.15);
       const flightActive = cargoPhases.includes(state.phase as typeof cargoPhases[number]);
       const roverActive = roverPhases.includes(state.phase as typeof roverPhases[number]);
       const flightView = content.querySelector<HTMLElement>('#cargo-flight-view')!;
@@ -438,7 +433,7 @@ export class RobotsScene extends ChapterScene {
       const roverDeploy = content.querySelector<SVGGElement>('#rover-deployment-cinematic')!;
       roverDeploy.setAttribute('transform', `translate(${target.x} ${target.y})`);
       roverDeploy.setAttribute('visibility', this.deployingRover ? 'visible' : 'hidden');
-      cargoShip.setAttribute('transform', `translate(${state.x.toFixed(1)} ${state.y.toFixed(1)}) rotate(${(state.heading * 180 / Math.PI + 90).toFixed(1)})`);
+      cargoShip.setAttribute('transform', `translate(${state.x.toFixed(1)} ${state.y.toFixed(1)}) rotate(${(state.heading * 180 / Math.PI + 90).toFixed(1)}) scale(.3)`);
       content.querySelector<SVGPolylineElement>('#cargo-flight-path')!.setAttribute('points', state.path.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(' '));
       content.querySelector<SVGTextElement>('#cargo-coordinate')!.textContent = `CARGO ROCKET ${state.x.toFixed(0)}, ${state.y.toFixed(0)} · ${state.fuel.toFixed(0)}% PROPELLANT`;
       content.querySelector<HTMLElement>('#cargo-phase')!.textContent = state.phase === 'landing' ? 'Touchdown' : state.phase === 'approach' ? 'Lunar approach' : state.phase === 'crashed' ? 'Flight ended' : 'Transfer';
@@ -461,6 +456,10 @@ export class RobotsScene extends ChapterScene {
         return `${mapped.x.toFixed(1)},${mapped.y.toFixed(1)}`;
       }).join(' '));
       content.querySelector<SVGGElement>('#rover-map-ship')?.setAttribute('transform', `translate(${ship.x.toFixed(1)} ${ship.y.toFixed(1)}) rotate(${(state.heading * 180 / Math.PI + 90).toFixed(1)}) scale(.85)`);
+      content.querySelectorAll<SVGGElement>('.rover-wheel').forEach((wheel) => {
+        const [cx, cy] = (wheel.dataset.center ?? '0,0').split(',');
+        wheel.setAttribute('transform', `translate(${cx} ${cy}) rotate(${this.wheelRotationDegrees.toFixed(1)})`);
+      });
       const cameraCoordinate = content.querySelector<SVGTextElement>('#rover-camera-coordinate');
       if (cameraCoordinate) cameraCoordinate.textContent = `ROVER ${state.x.toFixed(1)}, ${state.y.toFixed(1)} · ${speed.toFixed(1)} m/s`;
       const terrainLabel = content.querySelector<SVGTextElement>('#rover-site-terrain');
@@ -617,7 +616,12 @@ export class RobotsScene extends ChapterScene {
     if (cargoPhases.includes(this.roverState.phase as typeof cargoPhases[number])) {
       this.roverState = stepCargoFlight(this.roverState, this.cargoControls, delta / 1000);
     } else if (this.roverState.phase === 'driving') {
+      const previousX = this.roverState.x;
+      const previousY = this.roverState.y;
       this.roverState = stepRover(this.roverState, this.roverControls, delta / 1000);
+      const traveled = Math.hypot(this.roverState.x - previousX, this.roverState.y - previousY);
+      const forward = this.roverControls.forward || (!this.roverControls.reverse && Math.cos(this.roverState.heading) * this.roverState.vx + Math.sin(this.roverState.heading) * this.roverState.vy >= 0);
+      this.wheelRotationDegrees += (forward ? 1 : -1) * traveled / 4.5 * 360 / (2 * Math.PI);
     } else return;
     if (time - this.lastMissionRender >= 33) {
       this.lastMissionRender = time;

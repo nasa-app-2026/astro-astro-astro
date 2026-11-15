@@ -119,37 +119,45 @@ export function configureFlyby(state: FlybyState, plan: FlightPlan): FlybyState 
   };
 }
 
-export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeconds: number): FlybyState {
+function stepFlybyFrame(state: FlybyState, controls: FlightControls, deltaSeconds: number): FlybyState {
   if (!['launching', 'cruise', 'returning'].includes(state.phase)) return state;
-  const dt = Math.max(0, Math.min(deltaSeconds, 0.08));
+  const dt = Math.max(0, Math.min(deltaSeconds, 1 / 60));
   if (dt === 0) return state;
 
-  const horizontal = Number(controls.right) - Number(controls.left);
-  const vertical = Number(controls.up) - Number(controls.down);
-  const thrust = Math.abs(horizontal) + Math.abs(vertical);
+  let horizontal = Number(controls.right) - Number(controls.left);
+  let vertical = Number(controls.up) - Number(controls.down);
+  const thrust = Math.hypot(horizontal, vertical);
+  if (thrust > 1) {
+    horizontal /= thrust;
+    vertical /= thrust;
+  }
   const fuelScale = state.fuel <= 0 ? 0 : 0.18 + state.fuel / 100 * 0.82;
   const powerScale = state.battery <= 0 ? 0 : 1;
-  let ax = horizontal * 28 * fuelScale * powerScale;
-  let ay = vertical * 28 * fuelScale * powerScale;
-
-  if (state.x < 240 && state.y < 190) ay -= 8 * (1 - state.y / 220);
-
-  const dx = FLIGHT_WORLD.moon.x - state.x;
-  const dy = FLIGHT_WORLD.moon.y - state.y;
-  const moonDistanceNow = Math.hypot(dx, dy);
-  if (moonDistanceNow < 260 && moonDistanceNow > FLIGHT_WORLD.moon.radius) {
-    const gravity = 12 * (260 - moonDistanceNow) / 180;
-    ax += dx / moonDistanceNow * gravity;
-    ay += dy / moonDistanceNow * gravity;
-  }
+  const acceleration = 36 * fuelScale * powerScale;
+  let ax = horizontal * acceleration;
+  let ay = vertical * acceleration;
+  const addGravity = (body: { x: number; y: number; radius: number }, strength: number, range: number, cap: number): void => {
+    const dx = body.x - state.x;
+    const dy = body.y - state.y;
+    const r2 = dx * dx + dy * dy;
+    const r = Math.sqrt(r2);
+    if (r === 0 || r >= range) return;
+    const gravity = r < body.radius
+      ? cap * r / body.radius
+      : Math.min(cap, strength / Math.max(r2, body.radius * body.radius));
+    ax += dx / r * gravity;
+    ay += dy / r * gravity;
+  };
+  addGravity(FLIGHT_WORLD.earth, 22000, 210, 4.5);
+  addGravity(FLIGHT_WORLD.moon, 7000, 250, 1.8);
 
   let vx = state.vx + ax * dt;
   let vy = state.vy + ay * dt;
-  const drag = Math.pow(thrust ? 0.998 : 0.9, dt * 60);
+  const drag = Math.exp(-(thrust > 0 ? 0.06 : 1.35) * dt);
   vx *= drag;
   vy *= drag;
   const speed = Math.hypot(vx, vy);
-  const maxSpeed = 10 + state.fuel * 0.9;
+  const maxSpeed = 18 + state.fuel * 0.72;
   if (speed > maxSpeed) {
     vx = vx / speed * maxSpeed;
     vy = vy / speed * maxSpeed;
@@ -174,12 +182,19 @@ export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeco
   let orbitProgress = state.orbitProgress;
   let orbitAngle = state.orbitAngle;
   let orbitDirection = state.orbitDirection;
-  if (moonRadius >= 85 && moonRadius <= 230) {
+  // The camera compresses vertical distance, so a 140-unit circular orbit
+  // appears as a wide, shallow ellipse in the live flight view.
+  if (moonRadius >= 105 && moonRadius <= 175) {
     const angle = Math.atan2(flightState.y - FLIGHT_WORLD.moon.y, flightState.x - FLIGHT_WORLD.moon.x);
     if (orbitAngle !== null) {
       const delta = Math.atan2(Math.sin(angle - orbitAngle), Math.cos(angle - orbitAngle));
       if (orbitDirection === 0 && Math.abs(delta) > 0.002) orbitDirection = Math.sign(delta);
-      if (Math.sign(delta) === orbitDirection) orbitProgress = Math.min(Math.PI * 2, orbitProgress + Math.abs(delta));
+      if (Math.abs(delta) > 0.002 && Math.sign(delta) !== orbitDirection) {
+        orbitProgress = 0;
+        orbitDirection = Math.sign(delta);
+      } else if (Math.sign(delta) === orbitDirection) {
+        orbitProgress = Math.min(Math.PI * 2, orbitProgress + Math.abs(delta));
+      }
     }
     orbitAngle = angle;
   } else if (orbitProgress < Math.PI * 2) {
@@ -192,7 +207,8 @@ export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeco
   const returnedToEarth = flightState.phase === 'returning'
     && distance(flightState, FLIGHT_WORLD.earth) < 55
     && Math.hypot(vx, vy) < 22;
-  const asteroid = FLIGHT_ASTEROIDS.find((rock) => distance(flightState, rock) < rock.radius + 8);
+  // Collision radius follows the visible rock silhouette, with a small buffer for the ship hull.
+  const asteroid = FLIGHT_ASTEROIDS.find((rock) => distance(flightState, rock) < rock.radius * 0.65 + 5);
   const collision = moonDistance(flightState) < FLIGHT_WORLD.moon.radius || Boolean(asteroid);
   const path = flightState.path;
   const lastPoint = path[path.length - 1];
@@ -214,6 +230,16 @@ export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeco
           ? 'Moon orbit complete. Fly back toward Earth and slow down for a safe landing.'
           : state.message,
   };
+}
+
+export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeconds: number): FlybyState {
+  const total = Math.max(0, Math.min(deltaSeconds, 0.25));
+  if (total === 0) return state;
+  const frames = Math.max(1, Math.ceil(total / (1 / 60)));
+  const dt = total / frames;
+  let next = state;
+  for (let frame = 0; frame < frames; frame += 1) next = stepFlybyFrame(next, controls, dt);
+  return next;
 }
 
 export function collectFlybyScience(state: FlybyState, science: FlybyScience): FlybyState {

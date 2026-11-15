@@ -7,6 +7,10 @@ test('pilot the rocket from the launch pad and watch its live camera move', asyn
   await page.locator('[data-chapter="flyby"]').click();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'flyby');
   await expect(page.getByRole('img', { name: /rocket camera showing earth, moon, .*ship position/i })).toBeVisible();
+  await expect(page.locator('#flyby-ship')).toBeVisible();
+  await expect(page.locator('#flyby-ship text')).toHaveText('SURVEY • 01');
+  expect(Number(await page.locator('#flyby-earth > circle').getAttribute('r'))).toBe(60);
+  expect(Number(await page.locator('#flyby-moon > circle').getAttribute('r'))).toBe(20);
   const missionGrid = await page.locator('.flyby-panel .mission-grid').boundingBox();
   const camera = await page.locator('.flyby-panel .camera').boundingBox();
   const telemetry = await page.locator('.flyby-panel .telemetry').boundingBox();
@@ -35,6 +39,7 @@ test('pilot the rocket from the launch pad and watch its live camera move', asyn
   await expect(page.locator('#flyby-time')).toHaveCount(0);
   const startingPosition = await page.locator('#flyby-position').textContent();
   await page.getByRole('button', { name: /launch the survey rocket/i }).click();
+  await expect(page.locator('#flyby-ship')).toHaveAttribute('transform', /scale\(\.42\)/);
   await expect(page.locator('#flyby-fuel')).toHaveText('90%');
   await expect(page.locator('#flyby-battery')).toHaveText('75%');
   await page.keyboard.press('p');

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  FLIGHT_ASTEROIDS,
   FLIGHT_WORLD,
   FLYBY_SCIENCE,
   type FlybyState,
@@ -23,6 +24,24 @@ describe('piloted Moon flyby mission', () => {
     expect(state.phase).toBe('cruise');
     expect(state.fuel).toBeLessThan(initialFlybyState.fuel);
     expect(state.path.length).toBeGreaterThan(1);
+  });
+
+  it('keeps diagonal thrusters from producing extra acceleration', () => {
+    const cruise = { ...launchFlyby(initialFlybyState), phase: 'cruise' as const, x: 450, y: 100 };
+    const vertical = stepFlyby(cruise, { ...idle, up: true }, 1 / 60);
+    const diagonal = stepFlyby(cruise, { ...idle, up: true, right: true }, 1 / 60);
+    expect(Math.hypot(diagonal.vx, diagonal.vy)).toBeCloseTo(Math.hypot(vertical.vx, vertical.vy), 1);
+    expect(diagonal.vx).toBeGreaterThan(0);
+  });
+
+  it('keeps the trajectory stable across equivalent frame durations', () => {
+    const start = { ...launchFlyby(initialFlybyState), phase: 'cruise' as const, x: 450, y: 100 };
+    const oneStep = stepFlyby(start, { ...idle, up: true }, 0.1);
+    let manySteps: FlybyState = start;
+    for (let i = 0; i < 6; i += 1) manySteps = stepFlyby(manySteps, { ...idle, up: true }, 1 / 60);
+    expect(oneStep.x).toBeCloseTo(manySteps.x, 3);
+    expect(oneStep.y).toBeCloseTo(manySteps.y, 3);
+    expect(oneStep.vy).toBeCloseTo(manySteps.vy, 3);
   });
 
   it('auto-brakes the spacecraft when the player releases the thrusters', () => {
@@ -81,11 +100,52 @@ describe('piloted Moon flyby mission', () => {
     expect(state.message).toContain('orbit guide around the Moon once');
   });
 
+  it('restarts orbit progress when the spacecraft reverses around the Moon', () => {
+    const state: FlybyState = {
+      ...launchFlyby(initialFlybyState),
+      phase: 'cruise',
+      x: FLIGHT_WORLD.moon.x + 140,
+      y: FLIGHT_WORLD.moon.y,
+      vx: 0,
+      vy: -40,
+      orbitProgress: 1.2,
+      orbitAngle: 0.02,
+      orbitDirection: 1,
+    };
+    expect(stepFlyby(state, idle, 1 / 60).orbitProgress).toBe(0);
+  });
+
+  it('restarts orbit progress when the spacecraft leaves the marked orbit corridor', () => {
+    const state: FlybyState = {
+      ...launchFlyby(initialFlybyState),
+      phase: 'cruise',
+      x: FLIGHT_WORLD.moon.x + 240,
+      y: FLIGHT_WORLD.moon.y,
+      orbitProgress: 2,
+      orbitAngle: 0,
+      orbitDirection: 1,
+    };
+    expect(stepFlyby(state, idle, 1 / 60).orbitProgress).toBe(0);
+  });
+
   it('blocks instrument readings until the spacecraft reaches the required location', () => {
     const state = launchFlyby(initialFlybyState);
     const blocked = collectFlybyScience(state, FLYBY_SCIENCE.gravity);
     expect(blocked.science).toHaveLength(0);
     expect(blocked.message).toContain('Fly closer to the Moon');
+  });
+
+  it('does not register an asteroid hit when the rocket only passes nearby', () => {
+    const rock = FLIGHT_ASTEROIDS[0];
+    const nearMiss = {
+      ...launchFlyby(initialFlybyState),
+      phase: 'cruise' as const,
+      x: rock.x - 24,
+      y: rock.y,
+      vx: 0,
+      vy: 0,
+    };
+    expect(stepFlyby(nearMiss, idle, 0.01).phase).toBe('cruise');
   });
 
   it('applies the selected fuel and battery reserves', () => {
