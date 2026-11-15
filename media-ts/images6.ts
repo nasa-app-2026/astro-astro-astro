@@ -84,7 +84,7 @@ export const images6 = {
     "status": ["checked"],
     "statusNote": "link works, credit NASA/JPL/USGS",
     "shows": "a mosaic of about 1,500 Clementine pictures of the Moon's south pole region, seen from straight above (1996)",
-    "useFor": "the region-selection screen background; \"where is our outpost?\"",
+    "useFor": "the Survival region cards show location-context crops from this south-pole mosaic",
     "tags": ["south-pole", "map", "region", "moon", "craters"],
     "alt": "The Moon's south pole seen from above, covered in craters, with deep shadows",
     "size": "722 KB",

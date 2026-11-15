@@ -30,6 +30,8 @@ import { alternatives, replayAttempt } from '../../rules/chapter5/what-if';
 import { gaugeModel } from '../../rules/chapter5/gauges';
 import type { ResourceId } from '../../data/chapter5/gauges';
 import './survival/site.css';
+import equatorImageUrl from '../../../assets/images/apollo11-moonwalker.jpg?url';
+import southPoleMosaicUrl from '../../../assets/images/south-pole-mosaic.jpg?url';
 
 export class SurvivalScene extends ChapterScene {
   private state: Chapter5State = initialChapter5State();
@@ -49,6 +51,7 @@ export class SurvivalScene extends ChapterScene {
 
     const heading = (title: string) => {
       panel.replaceChildren();
+      panel.classList.remove('survival-equator-briefing');
       const titleElement = document.createElement('h1');
       titleElement.id = 'survival-heading';
       titleElement.tabIndex = -1;
@@ -61,12 +64,12 @@ export class SurvivalScene extends ChapterScene {
       element.textContent = text;
       panel.append(element);
     };
-    const button = (title: string, action: () => void) => {
+    const button = (title: string, action: () => void, parent: HTMLElement = panel) => {
       const element = document.createElement('button');
       element.type = 'button';
       element.textContent = title;
       element.addEventListener('click', action);
-      panel.append(element);
+      parent.append(element);
       return element;
     };
     const factElement = (id: Chapter5FactId) => {
@@ -475,16 +478,28 @@ export class SurvivalScene extends ChapterScene {
         heading('Plan Storm alert');
         progressStrip('Storm alert');
         paragraph('A what-if: NASA picks dates for other reasons.');
-        paragraph('Choose the Sun:');
+        const choices = document.createElement('div');
+        choices.className = 'survival-planning-options';
+        const sunGroup = document.createElement('section');
+        sunGroup.className = 'survival-planning-group';
+        sunGroup.setAttribute('aria-label', 'Choose the Sun');
+        const sunTitle = document.createElement('h2'); sunTitle.textContent = 'Choose the Sun'; sunGroup.append(sunTitle);
         for (const choice of ['busy', 'quiet'] as const) {
-          const item = button(choice === 'busy' ? 'Busy Sun' : 'Quiet Sun', () => { sun = choice; renderPlanning(); });
+          const item = button(choice === 'busy' ? 'Busy Sun' : 'Quiet Sun', () => { sun = choice; renderPlanning(); }, sunGroup);
           item.setAttribute('aria-pressed', String(sun === choice));
+          item.dataset.planChoice = choice;
         }
-        paragraph('Choose your cargo:');
+        const cargoGroup = document.createElement('section');
+        cargoGroup.className = 'survival-planning-group';
+        cargoGroup.setAttribute('aria-label', 'Choose your cargo');
+        const cargoTitle = document.createElement('h2'); cargoTitle.textContent = 'Choose your cargo'; cargoGroup.append(cargoTitle);
         for (const choice of ['shelter', 'science'] as const) {
-          const item = button(choice === 'shelter' ? 'Shelter supplies' : 'Extra science kit', () => { cargo = choice; renderPlanning(); });
+          const item = button(choice === 'shelter' ? 'Shelter supplies' : 'Extra science kit', () => { cargo = choice; renderPlanning(); }, cargoGroup);
           item.setAttribute('aria-pressed', String(cargo === choice));
+          item.dataset.planChoice = choice;
         }
+        choices.append(sunGroup, cargoGroup);
+        panel.append(choices);
         const plan = pendingBranch?.attempt.plan ?? { sun, cargo, region: this.state.chosenRegion ?? 'haworth', seed: settings.stormChallengeSeed };
         const estimate = prediction(plan);
         paragraph(`Predicted cosmic rays: ${estimate.cosmic} mSv. An unshielded storm could be anywhere from 0 to ${estimate.maxStorm} mSv (game estimate); nobody can predict storms. A moonwalk can add more. Single-storm line: ${estimate.limit} mSv.`);
@@ -521,8 +536,13 @@ export class SurvivalScene extends ChapterScene {
             paragraph('Building a shelter stacks water bags around the bunks and costs the day’s science. Taking shelter also costs the day’s science.');
             const warnings = state.alerts.filter(alert => alert.warningDay === day || alert.arrivalDay === day);
             if (warnings.length) paragraph('Space weather alert: an event may arrive today or tomorrow.');
+            const oxygenChoiceLabel = document.createElement('label');
+            oxygenChoiceLabel.htmlFor = 'storm-oxygen-choice';
+            oxygenChoiceLabel.textContent = 'How many kilograms of oxygen should we make today?';
+            panel.append(oxygenChoiceLabel);
             const select = document.createElement('select');
-            select.setAttribute('aria-label', 'Make oxygen today (kg)');
+            select.id = 'storm-oxygen-choice';
+            select.setAttribute('aria-label', 'Oxygen to make today (kg)');
             for (const amount of settings.oxygenChoices) {
               const option = document.createElement('option'); option.value = String(amount); option.textContent = `${amount} kg`; select.append(option);
             }
@@ -707,9 +727,19 @@ export class SurvivalScene extends ChapterScene {
         card.setAttribute('aria-label', region.name);
         const name = document.createElement('h2');
         name.textContent = region.name;
-        const picture = document.createElement('div');
-        picture.className = 'survival-picture-placeholder';
-        picture.textContent = 'Picture coming soon';
+        const picture = document.createElement('figure');
+        picture.className = `survival-region-picture survival-region-picture-${region.id}`;
+        const image = document.createElement('img');
+        image.src = southPoleMosaicUrl;
+        image.alt = `NASA Clementine mosaic showing the lunar south-pole terrain around ${region.name}; regional context view, not a site close-up.`;
+        const credit = document.createElement('figcaption');
+        const sourceLink = document.createElement('a');
+        sourceLink.href = 'https://images.nasa.gov/details/PIA00001';
+        sourceLink.target = '_blank';
+        sourceLink.rel = 'noopener noreferrer';
+        sourceLink.textContent = 'NASA/JPL/USGS ? Clementine south-pole mosaic (1996)';
+        credit.append(sourceLink, document.createTextNode(' ? regional context, not a site close-up'));
+        picture.append(image, credit);
         card.append(name, picture);
         for (const id of region.factIds) card.append(factElement(id));
         if ('note' in region) {
@@ -744,6 +774,16 @@ export class SurvivalScene extends ChapterScene {
     };
     const showEquator = () => {
       heading('Why look beyond the equator?');
+      panel.classList.add('survival-equator-briefing');
+      const backdrop = document.createElement('figure');
+      backdrop.className = 'survival-equator-backdrop';
+      const image = document.createElement('img');
+      image.src = equatorImageUrl;
+      image.alt = 'Apollo 11 astronaut Buzz Aldrin standing on the Moon near the lunar equator';
+      const credit = document.createElement('figcaption');
+      credit.textContent = 'Apollo 11 near the Moon?s equator ? NASA / Neil Armstrong ? NASA Image Library';
+      backdrop.append(image, credit);
+      panel.append(backdrop);
       const facts = document.createElement('ul');
       for (const fact of equatorBriefing(getPlayerProfile().ageRange)) {
         const item = document.createElement('li');

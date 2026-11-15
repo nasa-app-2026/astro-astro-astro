@@ -200,6 +200,13 @@ describe('Storm alert planning and rules', () => {
     expect(result.stormDose).toBe(300);
     expect(result.ending).toBe('Mission ended early, crew safe.');
   });
+  it('summarizes multiple false alerts once instead of repeating the same message', () => {
+    const alerts = [1, 2, 3, 4, 5].map(day => ({ flareId: `false-${day}`, warningDay: 1, arrivalDay: 1, kind: 'false-alarm' as const, level: null }));
+    const result = advanceStormAlert(startStormAlert({ ...plan, cargo: 'science' }, alerts), 0, 'build');
+    expect(result.lastMessage.match(/no linked particle events/g)).toHaveLength(1);
+    expect(result.lastMessage).toContain('5 alerts had no linked particle events');
+    expect(result.lastMessage).not.toContain('An alert had no linked particle event');
+  });
   it('adds extra science for lab work and protects a built shelter on alert', () => {
     const alert = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S4' as const }];
     expect(advanceStormAlert(startStormAlert(plan, alert), 0, 'shelter').stormDose).toBe(150);

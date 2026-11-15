@@ -3,7 +3,7 @@ import type { ImageAsset } from './types';
 export const images3 = {
   "apollo11-moonwalker": {
     "id": "apollo11-moonwalker",
-    "chapters": ["firstLanding"],
+    "chapters": ["firstLanding", "survival"],
     "download": "https://images-assets.nasa.gov/image/as11-40-5902/as11-40-5902~medium.jpg",
     "localImageURL": "../assets/images/apollo11-moonwalker.jpg",
     "page": "https://images.nasa.gov/details/as11-40-5902",
@@ -12,7 +12,7 @@ export const images3 = {
     "status": ["lookFirst"],
     "statusNote": "Link works, credit NASA; the lander's NASA markings may be in view",
     "shows": "Buzz Aldrin walking near a leg of the lunar module",
-    "useFor": "the spacesuit unlock card: \"a suit is a tiny spaceship\"",
+    "useFor": "the spacesuit unlock card; the Survival equator briefing backdrop (Apollo 11 landed near the lunar equator)",
     "tags": ["astronaut", "spacesuit", "moonwalk", "lander", "apollo-11", "real"],
     "alt": "An astronaut in a white spacesuit walking on the Moon near a leg of the lander",
     "size": "315 KB (medium; NASA has no \"large\" copy of this one)",

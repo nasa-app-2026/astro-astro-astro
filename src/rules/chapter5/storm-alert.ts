@@ -34,9 +34,11 @@ export function advanceStormAlert(state: StormState, oxygenKg: number, action: S
   let unknown = false;
   let smallOrFalse = false;
   const outcomes: string[] = [];
+  let falseAlarms = 0;
+  let unknownEvents = 0;
   for (const alert of incoming) {
-    if (alert.kind === 'unknown') { unknown = true; outcomes.push('A linked particle event has an unknown level.'); continue; }
-    if (alert.kind === 'false-alarm') { smallOrFalse = true; outcomes.push('An alert had no linked particle event in the archive.'); continue; }
+    if (alert.kind === 'unknown') { unknown = true; unknownEvents++; continue; }
+    if (alert.kind === 'false-alarm') { smallOrFalse = true; falseAlarms++; continue; }
     const level = alert.level as StormLevel;
     const impact = stormImpact(level, built && (action === 'shelter' || onMoonwalk), onMoonwalk);
     const addedWalk = onMoonwalk && state.plan.region === 'mons-mouton' ? settings.stormDose[level] * (settings.moutonWalkBackDoseFraction - settings.walkBackDoseFraction) : 0;
@@ -46,6 +48,10 @@ export function advanceStormAlert(state: StormState, oxygenKg: number, action: S
     tooHigh ||= eventDose > stormAlert.stormLimit;
     if (settings.stormDose[level] <= settings.stormDose.S1) smallOrFalse = true;
   }
+  if (falseAlarms === 1) outcomes.push('One alert had no linked particle event in the archive.');
+  else if (falseAlarms > 1) outcomes.push(`${falseAlarms} alerts had no linked particle events in the archive.`);
+  if (unknownEvents === 1) outcomes.push('One linked particle event had an unknown level.');
+  else if (unknownEvents > 1) outcomes.push(`${unknownEvents} linked particle events had unknown levels.`);
   const cosmic = dailyDose(state.plan.sun);
   const totalDose = Number((state.totalDose + cosmic + dose).toFixed(settings.displayDecimals));
   const science = state.science + (base.science - state.base.science) + (action === 'lab' && state.plan.cargo === 'science' ? settings.extraKitScience : 0);

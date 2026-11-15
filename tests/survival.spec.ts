@@ -252,12 +252,29 @@ test('Storm alert planning and quiet challenge reach the debrief', async ({ page
   await page.getByRole('button', { name: 'Near the south pole' }).click();
   await page.getByRole('button', { name: 'Choose Haworth' }).click();
   await page.getByRole('button', { name: 'Begin Storm alert' }).click();
+  const sunChoices = page.getByRole('region', { name: 'Choose the Sun' });
+  const cargoChoices = page.getByRole('region', { name: 'Choose your cargo' });
+  await expect(sunChoices.getByRole('button', { name: 'Busy Sun' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(cargoChoices.getByRole('button', { name: 'Shelter supplies' })).toHaveAttribute('aria-pressed', 'true');
+  const sunBox = await sunChoices.boundingBox();
+  const cargoBox = await cargoChoices.boundingBox();
+  expect(sunBox).not.toBeNull(); expect(cargoBox).not.toBeNull();
+  expect(cargoBox!.x).toBeGreaterThan(sunBox!.x);
   await page.getByRole('button', { name: 'Quiet Sun' }).click();
+  await expect(sunChoices.getByRole('button', { name: 'Quiet Sun' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(sunChoices.getByRole('button', { name: 'Busy Sun' })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: 'Extra science kit' }).click();
+  await expect(cargoChoices.getByRole('button', { name: 'Extra science kit' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(cargoChoices.getByRole('button', { name: 'Shelter supplies' })).toHaveAttribute('aria-pressed', 'false');
+  await page.getByRole('button', { name: 'Shelter supplies' }).click();
+  await expect(cargoChoices.getByRole('button', { name: 'Shelter supplies' })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText(/Predicted cosmic rays: 5.4 mSv/)).toBeVisible();
   await page.getByRole('button', { name: 'Start Storm alert' }).click();
   for (let day = 1; day <= 6; day++) {
     await expect(page.getByText(`Day ${day} of 6. Shelter built.`)).toBeVisible();
-    await page.getByRole('combobox', { name: 'Make oxygen today (kg)' }).selectOption(day >= 5 ? '1' : '0');
+    await expect(page.getByLabel('How many kilograms of oxygen should we make today?')).toBeVisible();
+    await expect(page.getByRole('combobox', { name: 'Oxygen to make today (kg)' })).toBeVisible();
+    await page.getByRole('combobox', { name: 'Oxygen to make today (kg)' }).selectOption(day >= 5 ? '1' : '0');
     await page.getByRole('button', { name: 'Rest', exact: true }).click();
   }
   await expect(page.getByText('Challenge complete!')).toBeVisible();
