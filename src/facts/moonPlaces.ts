@@ -217,7 +217,7 @@ export const moonPlaces = {
     farSideNotDark: {
         id: "moonPlaces.farSideNotDark",
         label: "known",
-        sources: ["SRC-R04-07", "SRC-R47-47"],
+        sources: ["SRC-R04-07", "SRC-R04-47"],
         credit: "NASA",
         young: "🌗 The \"dark side\" isn't dark! The far side gets just as much sunshine. We just never see it from Earth.",
         older: "The far side gets as much sunlight as the near side. We see only one side because the Moon spins once for each trip around Earth."

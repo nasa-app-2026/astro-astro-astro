@@ -10,7 +10,8 @@ import { missions } from '../../facts/missions';
  * Verified P0 dependencies, indexed by their existing catalog IDs.
  * Preserve the original fact objects, units, wording, labels and source keys.
  * Missing IDs remain unresolved in docs/chapter5-plan.md; no aliases or
- * replacement values are supplied here. Source details await sources.ts.
+ * replacement values are supplied here. Source details are available from
+ * the separately supplied registry in ../../facts/sources.
  */
 export const chapter5Facts = Object.freeze({
   [missions.im2Tipped.id]: missions.im2Tipped,

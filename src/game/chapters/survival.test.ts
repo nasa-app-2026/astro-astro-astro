@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { chapters } from './catalog';
 import { chapter5Facts } from '../../data/chapter5/facts';
-import { allFacts, lifeSupport } from '../../facts';
+import { allFacts, lifeSupport, radiation } from '../../facts';
 import { food } from '../../facts/food';
 import type { Fact } from '../../facts/types';
 import { equatorBriefing, factText } from '../../data/chapter5/site';
@@ -26,6 +26,38 @@ import { iceToAir } from '../../data/chapter5/challenges/ice-to-air';
 import { advanceIceToAir, startIceToAir } from '../../rules/chapter5/ice-to-air';
 import { trainingOrder, initialTrainingProgress, finishChallenge, nextChallenge, bigConnections } from '../../rules/chapter5/training';
 import { bestTrainingChange } from '../../rules/chapter5/training-replay';
+import { alternatives, replayAttempt } from '../../rules/chapter5/what-if';
+
+describe('Fair what-if replay', () => {
+  it('changes only one choice while retaining the same seed and original history', () => {
+    const attempt = { challenge: 'Into the dark' as const, region: 'haworth' as const, choices: [{ action: 'rest', oxygen: 0 }, { action: 'rest', oxygen: 0 }, { action: 'rest', oxygen: 0 }] };
+    const original = replayAttempt(attempt);
+    const changed = replayAttempt(attempt, { day: 2, choice: { action: 'rest', oxygen: 1 } });
+    expect(changed.seed).toBe(original.seed);
+    expect(changed.usedChoices[0]).toEqual(original.usedChoices[0]);
+    expect(changed.usedChoices[2]).toEqual(original.usedChoices[2]);
+    expect(changed.usedChoices[1]).toEqual({ action: 'rest', oxygen: 1 });
+    expect(attempt.choices[1].oxygen).toBe(0);
+    expect(changed.summary.gauges).toHaveLength(3);
+    expect(() => replayAttempt(attempt, { day: 2, choice: { action: 'lab', oxygen: 1 } })).toThrow('exactly one');
+  });
+  it('uses and reports Rest when a later relay-dependent action becomes unavailable', () => {
+    const attempt = { challenge: 'Can you hear us?' as const, region: 'nobile-rim-2' as const, choices: [{ action: 'relay', oxygen: 0 }, { action: 'lab', oxygen: 0 }, { action: 'send', oxygen: 0 }] };
+    const result = replayAttempt(attempt, { day: 1, choice: { action: 'rest', oxygen: 0 } });
+    expect(result.fallbackDays).toEqual([3]);
+    expect(result.usedChoices[2].action).toBe('rest');
+    expect(replayAttempt(attempt, undefined, 3).usedChoices).toEqual(attempt.choices.slice(0, 2));
+    expect(alternatives(attempt, 1)).not.toContainEqual(attempt.choices[0]);
+  });
+  it('reuses the chosen seed and exact space-weather schedule in both runs', () => {
+    const attempt = { challenge: 'Storm alert' as const, region: 'haworth' as const, plan: { sun: 'busy' as const, cargo: 'shelter' as const, region: 'haworth', seed: 987 }, choices: [{ action: 'rest', oxygen: 0 }, { action: 'rest', oxygen: 0 }] };
+    const original = replayAttempt(attempt);
+    const changed = replayAttempt(attempt, { day: 1, choice: { action: 'lab', oxygen: 0 } });
+    expect(changed.seed).toBe(987);
+    expect((changed.state as ReturnType<typeof startStormAlert>).alerts).toEqual((original.state as ReturnType<typeof startStormAlert>).alerts);
+    expect((original.state as ReturnType<typeof startStormAlert>).alerts.length).toBeGreaterThan(0);
+  });
+});
 
 describe('Training progress', () => {
   it('tracks each challenge in order and finishes after the fifth', () => {
@@ -251,13 +283,14 @@ it('records decisions and links the largest earlier energy costs to a later low-
 });
 
 describe('Into the dark challenge', () => {
-  it('uses a two-day dark example and labels the quiet dose as a training assumption', () => {
+  it('uses a two-day dark example and the catalog quiet-Sun dose estimate', () => {
     expect(intoTheDark.darkDays).toEqual([3, 4]);
     expect(intoTheDark.gauges).toMatchObject({ main: ['energy', 'air'], extra: 'dose', scienceGoal: 5 });
     expect(isDark(3)).toBe(true);
     expect(isDark(4)).toBe(true);
     expect(isDark(2)).toBe(false);
     expect(settings.quietDosePerDay).toBe(0.9);
+    expect(settings.quietDosePerDay).toBe(radiation.doseQuietSun.value);
   });
 
   it('accounts for breathing, oxygen making, solar input, heating, and action cost with reasons', () => {
@@ -267,7 +300,7 @@ describe('Into the dark challenge', () => {
     expect(energy.because).toContain('solar added 50 kWh');
     expect(energy.because).toContain('oxygen making used 14 kWh');
     expect(air.because).toContain('2 astronauts each breathe 0.8 kg');
-    expect(dose.because).toContain('not a sourced Moon dose');
+    expect(dose.because).toContain('catalog\'s quiet-Sun estimate');
     expect(first.lastResult!.scienceBecause).toContain('because');
     const second = advanceIntoTheDark(first, { oxygenKg: 0, action: 'rest' });
     const third = advanceIntoTheDark(second, { oxygenKg: 0, action: 'rest' });
@@ -369,6 +402,11 @@ describe('P4 settings and gauge text', () => {
 });
 
 describe('Survival equator briefing', () => {
+  it('uses a percentage-free sourced Haworth summary for the younger age group', () => {
+    expect(factText('moonPlaces.iceFriendlyGround', '7-9')).not.toContain('%');
+    expect(factText('moonPlaces.iceFriendlyGround', '7-9')).toContain('One study');
+    expect(factText('moonPlaces.iceFriendlyGround', '10-12')).toBe(chapter5Facts['moonPlaces.iceFriendlyGround'].older);
+  });
   it.each(['7-9', '10-12'] as const)('uses the three required facts and %s wording', (age) => {
     const briefing = equatorBriefing(age);
     expect(briefing.map((entry) => entry.id)).toEqual([

@@ -45,7 +45,7 @@ export function advanceIntoTheDark(state: DarkState, decision: DayDecision): Dar
     changes: [
       { gauge: 'energy', before: state.energy, after: energy, because: `Energy changed from ${format(state.energy)} to ${format(energy)} kWh because solar added ${solar} kWh, the base used ${settings.baseUsePerDay} kWh, ${dark ? `dark-day heating used ${heating} kWh` : 'extra heating used 0 kWh'}, oxygen making used ${oxygenEnergy} kWh, and ${action.title} used ${action.energy} kWh.` },
       { gauge: 'air', before: state.air, after: air, because: `Air changed from ${format(state.air)} to ${format(air)} kg because making added ${decision.oxygenKg} kg and ${intoTheDark.crewCount} astronauts each breathe ${lifeSupport.oxygenPerDay.value} kg a day (${format(breathing)} kg total).` },
-      { gauge: 'dose', before: state.dose, after: dose, because: `Dose rose ${settings.quietDosePerDay} mSv because this training example assumes that amount each quiet day; it is not a sourced Moon dose.` },
+      { gauge: 'dose', before: state.dose, after: dose, because: `Dose rose ${settings.quietDosePerDay} mSv because this training example uses the catalog's quiet-Sun estimate.` },
     ],
     scienceChange: action.science,
     scienceBecause: `Science gained ${action.science} point${action.science === 1 ? '' : 's'} because you chose ${action.title}.${action.id === 'rest' ? ' Rest gives the crew a break but costs a day of possible science.' : ''}`,

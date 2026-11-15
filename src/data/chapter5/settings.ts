@@ -1,4 +1,5 @@
 import { power } from '../../facts/power';
+import { radiation } from '../../facts/radiation';
 
 // Unit conversion: one Earth day contains 24 hours.
 export const hoursPerDay = 24;
@@ -22,7 +23,7 @@ export const settings = Object.freeze({
   labScienceGain: 1, // Game rule, made up for fun — points
   moonwalkScienceGain: 2, // Game rule, made up for fun — points
   oxygenChoices: [0, 1, 2], // Game rule, made up for fun — kg
-  quietDosePerDay: 0.9, // Game rule, made up for fun — mSv/day; unsourced training assumption
+  quietDosePerDay: radiation.doseQuietSun.value, // Catalog estimate, mSv/day; previously an unsourced training assumption.
   // Game estimate, made up for fun: there is no official way to turn a storm's S level into a dose on the Moon.
   stormDose: { S1: 5, S2: 20, S3: 80, S4: 300 },
   shelterDoseFraction: 0.5, // Game rule, made up for fun — inspired by radiation.shelterMass
