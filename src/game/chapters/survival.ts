@@ -3,6 +3,8 @@ import { chapters } from './catalog';
 import { getPlayerProfile } from '../../playerProfile';
 import { equatorBriefing, factText } from '../../data/chapter5/site';
 import { chapter5Facts, type Chapter5FactId } from '../../data/chapter5/facts';
+import { chapter5Data } from '../../data/chapter5/data-screen';
+import { GROUP_WORDS } from '../../facts/sources';
 import { regions } from '../../data/chapter5/regions';
 import { initialChapter5State, chooseRegion, type Chapter5State } from '../../rules/chapter5/state';
 import { LABEL_WORDS } from '../../facts/types';
@@ -150,6 +152,38 @@ export class SurvivalScene extends ChapterScene {
       view.append(list); toggle.addEventListener('click', () => { view.hidden = !view.hidden; toggle.setAttribute('aria-expanded', String(!view.hidden)); });
       panel.append(toggle, view);
     };
+    const showDataScreen = () => {
+      const data = chapter5Data();
+      heading('Where our data comes from');
+      paragraph('This game was made by students, not by NASA.');
+      const section = (title: string) => { const h = document.createElement('h2'); h.textContent = title; panel.append(h); };
+      section('Real numbers');
+      for (const fact of data.facts) {
+        const item = document.createElement('p');
+        item.dataset.factId = fact.id;
+        const text = document.createElement('span'); text.textContent = factText(fact.id as Chapter5FactId, getPlayerProfile().ageRange);
+        const credit = document.createElement('small'); credit.textContent = ` ${fact.id} - ${fact.credit} - ${LABEL_WORDS[fact.label]}`;
+        item.append(text, credit); panel.append(item);
+      }
+      section('Sources');
+      let group = '';
+      for (const source of data.sources) {
+        if (group !== source.group) { group = source.group; const h = document.createElement('h3'); h.textContent = GROUP_WORDS[source.group]; panel.append(h); }
+        const p = document.createElement('p'); p.dataset.sourceKey = source.key;
+        if (source.url) { const link = document.createElement('a'); link.href = source.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = source.title; p.append(link); }
+        else p.textContent = source.title;
+        p.append(` - ${source.organisation} (${source.key})`); panel.append(p);
+      }
+      section('NASA data');
+      paragraph(`Archived, not live: ${data.archive.months.map(month => month.month).join(' and ')}. Downloaded ${data.archive.downloadedAt}. Dates were moved onto mission days.`);
+      section('Game numbers');
+      for (const setting of data.gameNumbers) {
+        const item = document.createElement('p'); item.dataset.setting = setting.name;
+        item.textContent = `${setting.name}: ${JSON.stringify(setting.value)} - ${setting.derived ? 'calculated from a sourced fact' : 'made up to make it playable'}`;
+        panel.append(item);
+      }
+      button('Back to training debrief', showFinalDebrief);
+    };
     const showFinalDebrief = () => {
       heading('Training debrief');
       const turning = bestTrainingChange(attempts);
@@ -164,6 +198,7 @@ export class SurvivalScene extends ChapterScene {
         panel.append(answer);
       }
       for (const text of older ? connections : connections.slice(0, 1)) paragraph(text);
+      button('Where our data comes from', showDataScreen);
       button('Choose a challenge to replay', showChallenges);
       button('Choose another region', showRegions);
     };
@@ -214,6 +249,7 @@ export class SurvivalScene extends ChapterScene {
               p.textContent = `${model.icon} ${model.title}: ${model.status} `;
               const bar = document.createElement('progress'); bar.max = 1; bar.value = model.fraction; bar.setAttribute('aria-label', model.title); bar.setAttribute('aria-valuetext', model.status); p.append(bar);
             }
+            if (attempt.challenge === 'Storm alert' && gauge.name === 'Dose') p.append(' (game estimate)');
             column.append(p);
           }
           const science = document.createElement('p');
@@ -470,7 +506,7 @@ export class SurvivalScene extends ChapterScene {
               dose: { value: state.stormDose, capacity: stormAlert.stormLimit },
             }, state.science, getPlayerProfile().ageRange, settings.crewCount);
             panel.append(host);
-            paragraph(`Storm gauge: ${state.stormDose} mSv · Single-storm line: ${stormAlert.stormLimit} mSv · Total this mission: ${state.totalDose} mSv.`);
+            paragraph(`Storm gauge: ${state.stormDose} mSv (game estimate) · Single-storm line: ${stormAlert.stormLimit} mSv · Total this mission: ${state.totalDose} mSv.`);
             if (state.lastMessage) paragraph(state.lastMessage);
             if (state.ended) {
               paragraph(state.ending ?? '');

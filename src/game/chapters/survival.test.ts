@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { chapters } from './catalog';
 import { chapter5Facts } from '../../data/chapter5/facts';
+import { chapter5Data } from '../../data/chapter5/data-screen';
+import { sources } from '../../facts/sources';
 import { allFacts, lifeSupport, radiation } from '../../facts';
 import { food } from '../../facts/food';
 import type { Fact } from '../../facts/types';
@@ -116,7 +118,7 @@ describe('Fresh food', () => {
     expect(freshFood.dailyFood).toBe(3.6);
     expect(freshFood.lampEnergy).toBeCloseTo(15.6);
     expect(state.freshGrown).toBeCloseTo(0.0312);
-    expect(state.food).toBeCloseTo(11.4312);
+    expect(state.food).toBeCloseTo(settings.foodStartingSupply - freshFood.dailyFood + state.freshGrown);
     expect(state.energy).toBeCloseTo(206.4);
     expect(state.water).toBeCloseTo(4.8);
   });
@@ -473,5 +475,40 @@ describe('South pole regions', () => {
       expect(initial.chosenRegion).toBeNull();
     }
     expect(initialChapter5State().chosenRegion).toBeNull();
+  });
+});
+
+describe('P16 data and balance', () => {
+  it('includes each chapter fact, resolves and ranks its sources, and lists all settings', () => {
+    const data = chapter5Data();
+    expect(data.facts).toEqual(Object.values(chapter5Facts));
+    const expectedKeys = new Set([...data.facts.flatMap(f => [...f.sources]), ...stormArchive.sourceKeys]);
+    expect(data.sources.map(source => source.key)).toEqual(sources.filter(source => expectedKeys.has(source.key)).map(source => source.key));
+    expect(new Set(data.sources.map(source => source.key)).size).toBe(expectedKeys.size);
+    expect(data.facts.some(fact => fact.id === 'radiation.stormLimit')).toBe(true);
+    expect(data.gameNumbers.map(item => item.name)).toEqual(Object.keys(settings));
+    expect(data.gameNumbers.find(item => item.name === 'extraHeatingPerDarkDay')?.derived).toBe(true);
+  });
+  it('compares a careful and lazy plan for food and communications', () => {
+    let careful = startFreshFood(), lazy = startFreshFood();
+    for (let day = 1; day <= 6; day++) {
+      careful = advanceFreshFood(careful, day <= 3 ? 'lamps' : 'rest');
+      if (!lazy.ending) lazy = advanceFreshFood(lazy, 'rest');
+    }
+    expect(careful).toMatchObject({ ending: 'complete', science: 3 });
+    expect(lazy.ending).toBe('food');
+    let sent = startContact('haworth', settings.stormChallengeSeed, []);
+    let unsent = startContact('haworth', settings.stormChallengeSeed, []);
+    for (let day = 1; day <= 6; day++) {
+      sent = advanceContact(sent, day <= 5 ? 'lab' : 'send');
+      unsent = advanceContact(unsent, 'rest');
+    }
+    expect(sent.sent).toBeGreaterThanOrEqual(settings.scienceGoal);
+    expect(unsent).toMatchObject({ ending: 'complete', sent: 0 });
+  });
+  it('ends the lazy space-weather plan safely when no oxygen is made', () => {
+    let lazy = startStormAlert({ sun: 'quiet', cargo: 'shelter', region: 'haworth', seed: settings.stormChallengeSeed });
+    while (!lazy.ended) lazy = advanceStormAlert(lazy, 0, 'rest');
+    expect(lazy.ending).toContain('flew home');
   });
 });

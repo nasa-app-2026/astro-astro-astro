@@ -29,6 +29,7 @@ export const chapter5Facts = Object.freeze({
   [lifeSupport.oxygenEnergyModel.id]: lifeSupport.oxygenEnergyModel,
   [lifeSupport.oxygenEnergyMinimum.id]: lifeSupport.oxygenEnergyMinimum,
   [radiation.careerLimit.id]: radiation.careerLimit,
+  [radiation.stormLimit.id]: radiation.stormLimit,
   [radiation.waterBlanket.id]: radiation.waterBlanket,
   [radiation.doseBusySun.id]: radiation.doseBusySun,
   [radiation.doseQuietSun.id]: radiation.doseQuietSun,

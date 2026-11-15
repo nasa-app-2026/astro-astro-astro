@@ -173,10 +173,10 @@ export const moonPlaces = {
         value: 3500,
         unit: "metres",
         label: "known",
-        sources: ["SRC-R18-1-10"],
+        sources: ["SRC-R18-1-18"],
         credit: "NASA",
-        young: "🧗 Malpert Massif has a giant cliff about 3,500 metres tall!",
-        older: "Malpert Massif is a huge mountain block, over 5,000 m above its base, with a cliff of about 3,500 metres."
+        young: "🧗 Malpert Massif is a giant Moon mountain. A tall cliff can be seen in the distance!",
+        older: "Malpert Massif rises more than 5,000 metres above its base. A cliff about 3,500 metres tall is visible in the distance."
     },
     iceFriendlyGround: {
         id: "moonPlaces.iceFriendlyGround",

@@ -42,7 +42,7 @@ export const settings = Object.freeze({
   plantArea: 0.5, // Game rule, made up for fun — square metres
   lampHours: 12, // Game rule, made up for fun — hours per lamp day
   plantWaterRecovery: 0.9, // Game rule, made up for fun — fraction collected
-  foodStartingSupply: 15, // Game rule, made up for fun — kg
+  foodStartingSupply: 14.35, // Game rule, made up for fun — kg
   foodDeliveryAmount: 10, // Game rule, made up for fun — kg
   foodExpectedDeliveryDay: 4, // Game rule, made up for fun — expected mission day
   foodDeliveryDelay: 1, // Game rule, made up for fun — day

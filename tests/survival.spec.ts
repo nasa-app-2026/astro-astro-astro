@@ -161,6 +161,15 @@ for (const age of ['7-9', '10-12'] as const) {
     await page.getByRole('button', { name: 'Next challenge' }).click();
     await expect(page.getByRole('heading', { name: 'Training debrief' })).toBeVisible();
     await audit();
+    await page.getByRole('button', { name: 'Where our data comes from' }).click();
+    await expect(page.getByRole('heading', { name: 'Where our data comes from' })).toBeVisible();
+    await expect(page.getByText('This game was made by students, not by NASA.')).toBeVisible();
+    await expect(page.locator('[data-source-key="SRC-006"] a')).toHaveAttribute('href', /DONKI/);
+    await expect(page.locator('[data-source-key="SRC-R17B-04"]')).toHaveCount(1);
+    await expect(page.locator('[data-fact-id="moonPlaces.malpertCliff"]')).toHaveCount(1);
+    await expect(page.locator('[data-setting="baseUsePerDay"]')).toContainText('made up to make it playable');
+    await expect(page.getByText(/Archived, not live:/)).toContainText('2024-05');
+    await page.getByRole('button', { name: 'Back to training debrief' }).click();
     await expect(page.getByText('Science used energy.')).toBeVisible();
     if (age === '10-12') {
       await expect(page.getByText('Energy makes oxygen.')).toBeVisible();
@@ -179,6 +188,9 @@ for (const age of ['7-9', '10-12'] as const) {
       await page.getByRole('button', { name: 'Choose Haworth' }).click();
       await expect(page.getByRole('button', { name: 'Begin Ice to air' })).toBeVisible();
     }
+    await page.getByRole('button', { name: 'All missions' }).click();
+    await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
+    await expect(page.locator('[data-chapter="survival"]')).toBeVisible();
     expect(errors).toEqual([]);
     if (age === '7-9') {
       await test.info().attach('young-text-over-two-sentences', { body: JSON.stringify([...longText], null, 2), contentType: 'application/json' });
