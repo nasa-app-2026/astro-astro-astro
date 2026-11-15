@@ -120,7 +120,7 @@ export function stepCargoFlight(state: RobotsState, controls: CargoControls, del
     vx += dx / moonDistance * gravity * dt;
     vy += dy / moonDistance * gravity * dt;
   }
-  const drag = Math.pow(0.998, dt * 60);
+  const drag = Math.pow(thrust ? 0.998 : 0.9, dt * 60);
   vx *= drag;
   vy *= drag;
   const speed = Math.hypot(vx, vy);
@@ -211,8 +211,9 @@ export function stepRover(state: RobotsState, controls: RoverControls, deltaSeco
   const drive = Number(controls.forward) - Number(controls.reverse);
   const ax = Math.cos(heading) * drive * 24;
   const ay = Math.sin(heading) * drive * 24;
-  let vx = (state.vx + ax * dt) * Math.pow(0.992, dt * 60);
-  let vy = (state.vy + ay * dt) * Math.pow(0.992, dt * 60);
+  const drag = Math.pow(drive ? 0.992 : 0.94, dt * 60);
+  let vx = (state.vx + ax * dt) * drag;
+  let vy = (state.vy + ay * dt) * drag;
   const speed = Math.hypot(vx, vy);
   if (speed > 18) {
     vx = vx / speed * 18;

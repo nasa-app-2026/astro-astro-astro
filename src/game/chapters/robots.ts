@@ -171,28 +171,30 @@ export class RobotsScene extends ChapterScene {
         </div>
       </div>
       <p class="message" id="rover-message" aria-live="polite"></p>
-      <div class="controls" id="rover-site"><button type="button" data-action="site" data-site="${ROVER_SITES.sunnyRidge}">Select sunny ridge</button><button type="button" data-action="site" data-site="${ROVER_SITES.shadowedCrater}">Select shadowed crater</button></div>
-      <div class="controls" id="rover-launch" hidden><button type="button" data-action="launch">Launch the rover rocket</button></div>
-      <div class="controls" id="cargo-controls" hidden>
-        <button type="button" class="hold-control" data-cargo-control="left" aria-label="Thrust cargo rocket left">◀ Left thruster</button>
-        <button type="button" class="hold-control" data-cargo-control="up" aria-label="Thrust cargo rocket up">▲ Main thruster</button>
-        <button type="button" class="hold-control" data-cargo-control="down" aria-label="Reverse cargo rocket thrust">▼ Reverse thruster</button>
-        <button type="button" class="hold-control" data-cargo-control="right" aria-label="Thrust cargo rocket right">Right thruster ▶</button>
-      </div>
-      <p class="key-hint" id="cargo-hint" hidden>Hold arrow keys or thruster buttons to pilot. Use reverse thrust to slow down; avoid asteroids and line up with your target.</p>
-      <div class="controls" id="cargo-land" hidden><button type="button" data-action="land">Attempt soft landing at selected site</button></div>
-      <div class="controls" id="rover-deploy" hidden><button type="button" data-action="deploy">Deploy rover from the lander</button></div>
-      <div id="rover-driving" hidden>
-        <div class="controls" role="group" aria-label="Hold to steer the rover">
-          <button type="button" class="hold-control" data-rover-control="left" aria-label="Steer rover left">◀ Steer left</button>
-          <button type="button" class="hold-control" data-rover-control="forward" aria-label="Accelerate rover">▲ Accelerate</button>
-          <button type="button" class="hold-control" data-rover-control="reverse" aria-label="Reverse rover">▼ Reverse</button>
-          <button type="button" class="hold-control" data-rover-control="right" aria-label="Steer rover right">Steer right ▶</button>
+      <div class="action-dock" id="rover-action-dock" aria-label="Rover mission controls">
+        <div class="controls" id="rover-site"><button type="button" data-action="site" data-site="${ROVER_SITES.sunnyRidge}">Select sunny ridge</button><button type="button" data-action="site" data-site="${ROVER_SITES.shadowedCrater}">Select shadowed crater</button></div>
+        <div class="controls" id="rover-launch" hidden><button type="button" data-action="launch">Launch the rover rocket</button></div>
+        <div class="controls" id="cargo-controls" hidden>
+          <button type="button" class="hold-control" data-cargo-control="left" aria-label="Thrust cargo rocket left">◀ Left thruster</button>
+          <button type="button" class="hold-control" data-cargo-control="up" aria-label="Thrust cargo rocket up">▲ Main thruster</button>
+          <button type="button" class="hold-control" data-cargo-control="down" aria-label="Reverse cargo rocket thrust">▼ Reverse thruster</button>
+          <button type="button" class="hold-control" data-cargo-control="right" aria-label="Thrust cargo rocket right">Right thruster ▶</button>
         </div>
-        <p class="key-hint">Hold arrow keys or thruster buttons to drive. Let go to coast and take pictures from new map tiles.</p>
-        <div class="controls"><button type="button" data-action="photo">Take picture · camera shutter</button><button type="button" data-action="water">Collect crater soil sample</button></div>
+        <p class="key-hint" id="cargo-hint" hidden>Hold arrow keys or a thruster button to pilot. Let go to auto-brake, or use reverse thrust to slow down faster.</p>
+        <div class="controls" id="cargo-land" hidden><button type="button" data-action="land">Attempt soft landing at selected site</button></div>
+        <div class="controls" id="rover-deploy" hidden><button type="button" data-action="deploy">Deploy rover from the lander</button></div>
+        <div id="rover-driving" hidden>
+          <div class="controls" role="group" aria-label="Hold to steer the rover">
+            <button type="button" class="hold-control" data-rover-control="left" aria-label="Steer rover left">◀ Steer left</button>
+            <button type="button" class="hold-control" data-rover-control="forward" aria-label="Accelerate rover">▲ Accelerate</button>
+            <button type="button" class="hold-control" data-rover-control="reverse" aria-label="Reverse rover">▼ Reverse</button>
+            <button type="button" class="hold-control" data-rover-control="right" aria-label="Steer rover right">Steer right ▶</button>
+          </div>
+          <p class="key-hint">Hold arrows to drive. Let go to auto-brake; press P to take a picture.</p>
+          <div class="controls"><button type="button" data-action="photo">Take picture · camera shutter</button><button type="button" data-action="water">Collect crater soil sample</button></div>
+        </div>
+        <div class="controls" id="rover-replay" hidden><button type="button" data-action="replay">Replay rover mission</button></div>
       </div>
-      <div class="controls" id="rover-replay" hidden><button type="button" data-action="replay">Replay rover mission</button></div>
       <p class="note">This uncrewed rocket carries the rover to the lunar surface. Moon terrain can block radio; the rover's camera and map continue working during a blackout.</p>`;
     panel.append(content);
 
@@ -356,15 +358,25 @@ export class RobotsScene extends ChapterScene {
         updateDisplay();
       }
     };
+    const releaseControls = (): void => {
+      Object.assign(this.cargoControls, cargoControlsTemplate);
+      Object.assign(this.roverControls, roverControlsTemplate);
+    };
+    const onVisibilityChange = (): void => {
+      if (document.hidden) releaseControls();
+    };
     keyboard?.on('keydown', onKeyDown);
     keyboard?.on('keyup', onKeyUp);
+    window.addEventListener('blur', releaseControls);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     chapterView.append(panel);
     const cleanup = (): void => {
       keyboard?.off('keydown', onKeyDown);
       keyboard?.off('keyup', onKeyUp);
-      Object.assign(this.cargoControls, cargoControlsTemplate);
-      Object.assign(this.roverControls, roverControlsTemplate);
+      window.removeEventListener('blur', releaseControls);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      releaseControls();
       this.renderMission = undefined;
       panel.remove();
     };

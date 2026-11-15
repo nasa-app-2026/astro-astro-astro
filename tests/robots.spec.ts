@@ -5,6 +5,8 @@ test('choose a lunar site and pilot the second cargo rocket from Earth', async (
   await page.goto('/');
   await page.locator('[data-chapter="robots"]').click();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'robots');
+  await expect(page.locator('#rover-action-dock')).toBeInViewport();
+  await expect(page.locator('#rover-action-dock')).toHaveCSS('position', 'fixed');
   await expect(page.getByRole('button', { name: /select shadowed crater/i })).toBeVisible();
   await page.getByRole('button', { name: /select shadowed crater/i }).click();
   await page.getByRole('button', { name: /launch the rover rocket/i }).click();
@@ -12,16 +14,16 @@ test('choose a lunar site and pilot the second cargo rocket from Earth', async (
   await expect(page.getByRole('img', { name: /live view of the cargo rocket traveling from earth to the moon/i })).toBeVisible();
   await expect(page.locator('#cargo-target')).toHaveText('Shadowed crater');
   const startingPosition = await page.locator('#cargo-position').textContent();
-  await page.keyboard.down('ArrowRight');
-  await page.keyboard.down('ArrowUp');
-  await page.waitForTimeout(900);
-  await page.keyboard.up('ArrowRight');
-  await page.keyboard.up('ArrowUp');
+  const thrustButton = page.getByRole('button', { name: 'Thrust cargo rocket up' });
+  for (let pulse = 0; pulse < 12; pulse += 1) {
+    await thrustButton.click();
+  }
 
   const updatedPosition = await page.locator('#cargo-position').textContent();
   expect(updatedPosition).not.toBe(startingPosition);
   await expect(page.locator('#cargo-fuel')).not.toHaveText('100%');
   await expect(page.locator('#cargo-flight-path')).not.toHaveAttribute('points', '');
+  await expect(page.locator('#cargo-hint')).toContainText(/let go to auto-brake/i);
 
   await page.getByRole('button', { name: 'All missions' }).click();
   await expect(page.locator('#home')).toBeVisible();

@@ -31,7 +31,7 @@ export {
 export { collectFlybyScience, configureFlyby, initialFlybyState, launchFlyby, restartFlyby, stepFlyby } from './flyby.logic';
 
 const panelStyles = `
-  .flyby-panel{pointer-events:auto;max-width:1000px;margin:18px auto 58px;padding:22px 26px;border:1px solid #47728a;border-radius:16px;background:linear-gradient(145deg,#102a42f2,#09192bf5);box-shadow:0 18px 50px #0005;color:#edf8ff;font:16px Arial,sans-serif}
+  .flyby-panel{pointer-events:auto;max-width:1000px;margin:18px auto 58px;padding:22px 26px 240px;border:1px solid #47728a;border-radius:16px;background:linear-gradient(145deg,#102a42f2,#09192bf5);box-shadow:0 18px 50px #0005;color:#edf8ff;font:16px Arial,sans-serif}
   .flyby-panel *{box-sizing:border-box}.flyby-panel .eyebrow{margin:0;color:#79e6dc;font-size:12px;font-weight:bold;letter-spacing:.18em}
   .flyby-panel h2{margin:8px 0 4px;color:#fff;font-size:clamp(24px,4vw,36px)}.flyby-panel h3{margin:16px 0 8px;color:#e8f5ff;font-size:16px}
   .flyby-panel .intro{margin:8px 0 18px;color:#c3d8e6;line-height:1.55}.flyby-panel .mission-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;margin:16px 0}
@@ -42,27 +42,32 @@ const panelStyles = `
   .flyby-panel .progress{height:8px;margin:12px 0 18px;border-radius:8px;background:#27455b;overflow:hidden}.flyby-panel .progress span{display:block;height:100%;border-radius:8px;background:#79e6dc;transition:width .25s}
   .flyby-panel .message{min-height:44px;margin:14px 0;padding:12px 14px;border-left:3px solid #79e6dc;border-radius:5px;background:#102940;color:#e5f4ff;line-height:1.5}
   .flyby-panel .controls{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:12px 0}
+  .flyby-panel .action-dock{position:fixed;left:50%;bottom:58px;z-index:20;width:min(1000px,calc(100vw - 24px));max-height:50vh;overflow:hidden;transform:translateX(-50%);padding:8px 14px;border:1px solid #47728a;border-radius:12px;background:#081827f5;box-shadow:0 8px 30px #0009}
+  .flyby-panel .action-dock .controls{margin:6px 0}
+  .flyby-panel .action-dock .plan{margin:4px 0}
+  .flyby-panel #flyby-instruments{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+  .flyby-panel #flyby-instruments button{min-height:40px;padding:6px;font-size:12px}
   .flyby-panel button{min-height:44px;padding:10px 14px;border:1px solid #71cfc8;border-radius:8px;background:#124354;color:#fff;font-weight:bold}
   .flyby-panel button:hover:not(:disabled){background:#1b6572}.flyby-panel button:disabled{opacity:.45;cursor:default}
   .flyby-panel .science-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
   .flyby-panel .science-card{display:flex;align-items:center;gap:8px;min-height:48px;padding:10px;border:1px solid #31516a;border-radius:8px;background:#15334d;color:#d9eaf4;font-size:13px}
+  .flyby-panel kbd{display:inline-grid;place-items:center;min-width:24px;padding:3px 6px;border:1px solid #71cfc8;border-radius:4px;background:#0a1c2b;color:#8ce9db;font:700 12px Arial,sans-serif}
   .flyby-panel .science-card.done{border-color:#5faaa3;background:#123d46}
   .flyby-panel .note{margin:12px 0 0;color:#9eb8ca;font-size:12px;line-height:1.45}.flyby-panel .key-hint{text-align:center;color:#a8c6d9;font-size:12px}
-  .flyby-panel .plan{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0;padding:14px;border:1px solid #31516a;border-radius:10px;background:#0d2438}
+  .flyby-panel .plan{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0;padding:14px;border:1px solid #31516a;border-radius:10px;background:#0d2438}
   .flyby-panel .plan label{display:grid;gap:7px;color:#d9eaf4;font-size:13px;font-weight:bold}
-  .flyby-panel .plan output{color:#8ce9db}.flyby-panel input[type=range],.flyby-panel select{width:100%;accent-color:#79e6dc}
-  .flyby-panel .autopilot{grid-column:1/-1;display:flex!important;grid-template-columns:auto 1fr!important;align-items:center}
+  .flyby-panel .plan output{color:#8ce9db}.flyby-panel input[type=range]{width:100%;accent-color:#79e6dc}
   .flyby-panel .dummy-note{margin:10px 0;padding:10px 12px;border:1px solid #876d4f;border-radius:8px;background:#352d24;color:#ffdfaa;font-size:13px}
   .flyby-panel .first-person{border:1px solid #31516a;border-radius:12px;background:#030a13;overflow:hidden}.flyby-panel .first-person svg{display:block;width:100%;height:auto}
   .flyby-panel [hidden]{display:none!important}.flyby-panel .hold-control{touch-action:none;user-select:none}
-  @media(max-width:700px){.flyby-panel{margin:12px 14px 55px;padding:17px}.flyby-panel .mission-grid,.flyby-panel .plan{grid-template-columns:1fr}.flyby-panel .science-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:700px){.flyby-panel{margin:12px 14px 55px;padding:17px 17px 230px}.flyby-panel .action-dock{bottom:8px;width:calc(100vw - 16px);max-height:50vh;padding:6px}.flyby-panel .mission-grid,.flyby-panel .plan{grid-template-columns:1fr}.flyby-panel .science-list{grid-template-columns:repeat(2,minmax(0,1fr))}.flyby-panel #flyby-instruments{grid-template-columns:repeat(2,minmax(0,1fr))}}
 `;
 
-const scienceActions: Array<{ science: FlybyScience; label: string }> = [
-  { science: FLYBY_SCIENCE.photos, label: 'Take crater photos' },
-  { science: FLYBY_SCIENCE.radiation, label: 'Measure radiation' },
-  { science: FLYBY_SCIENCE.sunlight, label: 'Measure sunlight' },
-  { science: FLYBY_SCIENCE.gravity, label: 'Measure lunar gravity' },
+const scienceActions: Array<{ science: FlybyScience; label: string; buttonLabel: string; key: string }> = [
+  { science: FLYBY_SCIENCE.photos, label: 'Take crater photos', buttonLabel: 'Photos', key: 'P' },
+  { science: FLYBY_SCIENCE.radiation, label: 'Measure radiation', buttonLabel: 'Radiation', key: 'R' },
+  { science: FLYBY_SCIENCE.sunlight, label: 'Measure sunlight', buttonLabel: 'Sunlight', key: 'S' },
+  { science: FLYBY_SCIENCE.gravity, label: 'Measure lunar gravity', buttonLabel: 'Gravity', key: 'G' },
 ];
 
 const controlsTemplate: FlightControls = { left: false, right: false, up: false, down: false };
@@ -97,20 +102,8 @@ export class FlybyScene extends ChapterScene {
     content.innerHTML = `
       <p class="eyebrow">CONTINUOUS GAME · STAGE 1 OF 2</p>
       <h2>Mission Control: Moon flyby</h2>
-      <p class="intro">Launch from the pad, pilot the ship through space with small thruster controls, gather all four science readings near the Moon, circle it twice, and land safely back at Earth. Three instrumented test dummies ride onboard; no astronauts are on this flight.</p>
-      <div class="plan" id="flyby-plan">
-        <label>Mission time
-          <select id="mission-time"><option value="60">60 minutes · quick survey</option><option value="90" selected>90 minutes · balanced</option><option value="120">120 minutes · extra reserve</option></select>
-        </label>
-        <label>Fill rocket fuel tank <output id="fuel-output">100%</output>
-          <input id="fuel-fill" type="range" min="0" max="100" step="10" value="100" aria-label="Rocket fuel load"/>
-        </label>
-        <label>Store battery power <output id="battery-output">100%</output>
-          <input id="battery-store" type="range" min="25" max="100" step="5" value="100" aria-label="Stored rocket energy"/>
-        </label>
-        <label class="autopilot"><input id="autopilot-plan" type="checkbox" checked/> Program autopilot for the Moon's far-side communication blackout</label>
-      </div>
-      <p class="note">Fuel powers movement; low fuel means slower acceleration. Stored battery powers steering and science instruments. Choose enough mission time and power for the work you plan.</p>
+      <p class="intro">Launch from the pad, pilot the ship through space, collect four science readings near the Moon, and land safely back at Earth. There is no mission clock or orbit quota. The controls stay pinned at the bottom, so you never need to scroll to steer or do a job.</p>
+      <p class="note">Only fuel and power are limited. Take as much time as you need.</p>
       <div class="mission-grid">
         <div class="camera" aria-label="Live ship camera">
           <div class="camera-title"><span>LIVE FLIGHT CAMERA</span><span id="flyby-camera-state">● READY</span></div>
@@ -133,7 +126,7 @@ export class FlybyScene extends ChapterScene {
             <path d="M0 85H360" stroke="#18384b" stroke-width="1"/>
             <g id="flyby-first-person-objects"></g>
             <path d="M180 44v24M168 56h24" stroke="#8ce9db" stroke-width="1" opacity=".8"/>
-            <text id="flyby-autopilot-status" x="10" y="101" fill="#9eb8ca" font-size="10">PILOT LINK READY</text>
+            <text id="flyby-link-status" x="10" y="101" fill="#9eb8ca" font-size="10">PILOT CONTROL · AUTO-BRAKE ON</text>
           </svg>
         </div>
         <div class="telemetry">
@@ -142,28 +135,35 @@ export class FlybyScene extends ChapterScene {
           <div class="stat"><span>Stored power</span><strong id="flyby-battery">100%</strong></div>
           <div class="stat"><span>Position</span><strong id="flyby-position">100, 89</strong></div>
           <div class="stat"><span>Speed</span><strong id="flyby-speed">0.0 m/s</strong></div>
-          <div class="stat"><span>Earth signal</span><strong id="flyby-signal">100%</strong></div>
-          <div class="stat"><span>Lunar orbits</span><strong id="flyby-orbits">0 / 2</strong></div>
-          <div class="stat"><span>Time remaining</span><strong id="flyby-time">90 min</strong></div>
           <div class="stat"><span>Radiation</span><strong id="flyby-radiation">Not measured</strong></div>
         </div>
       </div>
       <div class="progress" role="progressbar" aria-label="Flyby mission progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="flyby-progress" style="width:0%"></span></div>
-      <h3>Mission jobs</h3><div class="science-list" id="flyby-science"></div>
+      <h3>Mission jobs · press P, R, S, or G</h3><div class="science-list" id="flyby-science"></div>
       <p class="message" id="flyby-message" aria-live="polite"></p>
-      <div class="controls" id="flyby-launch"><button type="button" data-action="launch">Launch the survey rocket</button></div>
-      <div id="flyby-flight" hidden>
-        <div class="controls" role="group" aria-label="Hold to steer the spacecraft">
-          <button type="button" class="hold-control" data-control="left" aria-label="Thrust left">◀ Left thruster</button>
-          <button type="button" class="hold-control" data-control="up" aria-label="Thrust up">▲ Main thruster</button>
-          <button type="button" class="hold-control" data-control="down" aria-label="Thrust down">▼ Reverse thruster</button>
-          <button type="button" class="hold-control" data-control="right" aria-label="Thrust right">Right thruster ▶</button>
+      <div class="action-dock" id="flyby-action-dock" aria-label="Flight controls and mission actions">
+        <div class="plan" id="flyby-plan">
+          <label>Fuel <output id="fuel-output">100%</output>
+            <input id="fuel-fill" type="range" min="0" max="100" step="10" value="100" aria-label="Rocket fuel load"/>
+          </label>
+          <label>Power <output id="battery-output">100%</output>
+            <input id="battery-store" type="range" min="25" max="100" step="5" value="100" aria-label="Stored rocket energy"/>
+          </label>
         </div>
-        <p class="key-hint">Hold arrow keys or these thruster buttons for precise movement. Release to coast; use reverse thrust to slow down.</p>
-        <div class="controls" id="flyby-instruments"></div>
+        <div class="controls" id="flyby-launch"><button type="button" data-action="launch">Launch the survey rocket</button></div>
+        <div id="flyby-flight" hidden>
+          <div class="controls" role="group" aria-label="Hold to steer the spacecraft">
+            <button type="button" class="hold-control" data-control="left" aria-label="Thrust left">◀ Left thruster</button>
+            <button type="button" class="hold-control" data-control="up" aria-label="Thrust up">▲ Main thruster</button>
+            <button type="button" class="hold-control" data-control="down" aria-label="Thrust down">▼ Reverse thruster</button>
+            <button type="button" class="hold-control" data-control="right" aria-label="Thrust right">Right thruster ▶</button>
+          </div>
+          <p class="key-hint">Hold arrows to steer · X reverse · release to brake · P photos · R radiation · S sunlight · G gravity.</p>
+          <div class="controls" id="flyby-instruments"></div>
+        </div>
+        <div class="controls" id="flyby-retry" hidden><button type="button" data-action="retry">Restart flight</button></div>
+        <div class="controls" id="flyby-continue" hidden><button type="button" data-action="continue">Launch the rover mission</button></div>
       </div>
-      <div class="controls" id="flyby-retry" hidden><button type="button" data-action="retry">Restart flight</button></div>
-      <div class="controls" id="flyby-continue" hidden><button type="button" data-action="continue">Launch the rover mission</button></div>
       <p class="note">Science references: Artemis I radiation measurements (~1 mSv/day near the Moon), sunlight at lunar distance (~1,361 W/m²), and lunar gravity (~1.62 m/s²). These are educational reference values, not live readings.</p>`;
     panel.append(content);
 
@@ -180,15 +180,13 @@ export class FlybyScene extends ChapterScene {
     });
 
     const scienceList = content.querySelector<HTMLElement>('#flyby-science')!;
-    scienceList.innerHTML = scienceActions.map(({ science, label }) => `<div class="science-card" data-science-card="${science}">${label}</div>`).join('');
+    scienceList.innerHTML = scienceActions.map(({ science, label, key }) => `<div class="science-card" data-science-card="${science}"><kbd>${key}</kbd>${label}</div>`).join('');
     const instruments = content.querySelector<HTMLElement>('#flyby-instruments')!;
     const powerCosts: Record<FlybyScience, number> = { photos: 15, radiation: 10, sunlight: 10, gravity: 8 };
-    instruments.innerHTML = scienceActions.map(({ science, label }) => `<button type="button" data-action="science" data-science="${science}" aria-label="${FLYBY_SCIENCE_LABELS[science]}" disabled>${label} · ${powerCosts[science]} power</button>`).join('');
+    instruments.innerHTML = scienceActions.map(({ science, buttonLabel, key }) => `<button type="button" data-action="science" data-science="${science}" aria-label="${FLYBY_SCIENCE_LABELS[science]} (press ${key})" disabled><kbd>${key}</kbd> ${buttonLabel} · ${powerCosts[science]} P</button>`).join('');
     const planControls = {
       fuel: content.querySelector<HTMLInputElement>('#fuel-fill')!,
       battery: content.querySelector<HTMLInputElement>('#battery-store')!,
-      duration: content.querySelector<HTMLSelectElement>('#mission-time')!,
-      autopilot: content.querySelector<HTMLInputElement>('#autopilot-plan')!,
     };
     const updatePlanOutputs = (): void => {
       content.querySelector<HTMLOutputElement>('#fuel-output')!.value = `${planControls.fuel.value}%`;
@@ -237,7 +235,6 @@ export class FlybyScene extends ChapterScene {
         object?.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${scale.toFixed(2)})`);
         object?.setAttribute('opacity', visible ? `${Math.max(0.35, 1 - distance / 320)}` : '0');
       });
-      const remainingMinutes = Math.max(0, state.missionMinutes - state.elapsedMinutes);
       const pathPoints = state.path.map((point) => {
         const mapped = mapPoint(point);
         return `${mapped.x.toFixed(1)},${mapped.y.toFixed(1)}`;
@@ -254,16 +251,10 @@ export class FlybyScene extends ChapterScene {
       })[state.phase];
       content.querySelector<HTMLElement>('#flyby-fuel')!.textContent = `${state.fuel.toFixed(0)}%`;
       content.querySelector<HTMLElement>('#flyby-battery')!.textContent = `${state.battery.toFixed(0)}%`;
-      content.querySelector<HTMLElement>('#flyby-time')!.textContent = `${remainingMinutes.toFixed(0)} min`;
       content.querySelector<HTMLElement>('#flyby-position')!.textContent = `${state.x.toFixed(0)}, ${state.y.toFixed(0)}`;
       content.querySelector<HTMLElement>('#flyby-speed')!.textContent = `${speed.toFixed(1)} m/s`;
-      content.querySelector<HTMLElement>('#flyby-signal')!.textContent = `${state.signal}%`;
-      content.querySelector<HTMLElement>('#flyby-orbits')!.textContent = `${state.orbits} / 2`;
       content.querySelector<HTMLElement>('#flyby-radiation')!.textContent = state.doseMsv ? `${state.doseMsv} mSv/day` : 'Not measured';
       content.querySelector<HTMLElement>('#flyby-message')!.textContent = state.message;
-      content.querySelector<SVGTextElement>('#flyby-autopilot-status')!.textContent = state.signal < 100
-        ? state.autopilot ? 'RADIO BLACKOUT · AUTOPILOT HOLDING COURSE' : 'RADIO BLACKOUT · PILOT INPUT UNAVAILABLE'
-        : state.autopilot ? 'AUTOPILOT ARMED · PILOT CONTROL AVAILABLE' : 'MANUAL CONTROL · RADIO LINK AVAILABLE';
       content.querySelector<HTMLElement>('#flyby-camera-state')!.textContent = state.phase === 'briefing' ? '● READY' : state.phase === 'complete' ? '● HOME SAFE' : '● LIVE';
       content.querySelector<HTMLElement>('#flyby-launch')!.hidden = state.phase !== 'briefing';
       content.querySelector<HTMLElement>('#flyby-plan')!.hidden = state.phase !== 'briefing';
@@ -271,7 +262,7 @@ export class FlybyScene extends ChapterScene {
       content.querySelector<HTMLElement>('#flyby-retry')!.hidden = state.phase !== 'crashed';
       content.querySelector<HTMLElement>('#flyby-continue')!.hidden = state.phase !== 'complete';
 
-      const progress = state.phase === 'complete' ? 100 : Math.min(95, state.science.length * 14 + state.orbits * 20 + (state.phase === 'returning' ? 5 : 0));
+      const progress = state.phase === 'complete' ? 100 : Math.min(95, state.science.length * 22 + (state.phase === 'returning' ? 8 : 0));
       content.querySelector<HTMLElement>('#flyby-progress')!.style.width = `${progress}%`;
       content.querySelector<HTMLElement>('[role="progressbar"]')!.setAttribute('aria-valuenow', `${progress}`);
       for (const { science } of scienceActions) {
@@ -282,7 +273,7 @@ export class FlybyScene extends ChapterScene {
                 : state.y >= 150
         );
         const button = content.querySelector<HTMLButtonElement>(`button[data-science="${science}"]`);
-        if (button) button.disabled = !available || state.battery < powerCosts[science] || (state.signal < 100 && !state.autopilot);
+        if (button) button.disabled = !available || state.battery < powerCosts[science];
         const card = content.querySelector<HTMLElement>(`[data-science-card="${science}"]`);
         card?.classList.toggle('done', state.science.includes(science));
       }
@@ -318,8 +309,6 @@ export class FlybyScene extends ChapterScene {
         const plan: FlightPlan = {
           fuelLoad: Number(planControls.fuel.value),
           energyStore: Number(planControls.battery.value),
-          missionMinutes: Number(planControls.duration.value),
-          autopilot: planControls.autopilot.checked,
         };
         this.flightState = launchFlyby(configureFlyby(this.flightState, plan));
       }
@@ -339,10 +328,25 @@ export class FlybyScene extends ChapterScene {
       arrowleft: 'left', a: 'left',
       arrowright: 'right', d: 'right',
       arrowup: 'up', w: 'up',
-      arrowdown: 'down', s: 'down',
+      arrowdown: 'down', x: 'down',
+    };
+    const scienceKeys: Record<string, FlybyScience> = {
+      p: FLYBY_SCIENCE.photos,
+      r: FLYBY_SCIENCE.radiation,
+      s: FLYBY_SCIENCE.sunlight,
+      g: FLYBY_SCIENCE.gravity,
     };
     const onKeyDown = (event: KeyboardEvent): void => {
-      const control = keyControls[event.key.toLowerCase()];
+      if (event.repeat) return;
+      const key = event.key.toLowerCase();
+      const science = scienceKeys[key];
+      if (science && ['launching', 'cruise'].includes(this.flightState.phase)) {
+        event.preventDefault();
+        this.flightState = collectFlybyScience(this.flightState, science);
+        updateDisplay();
+        return;
+      }
+      const control = keyControls[key];
       if (!control) return;
       event.preventDefault();
       this.heldControls[control] = true;
@@ -351,14 +355,22 @@ export class FlybyScene extends ChapterScene {
       const control = keyControls[event.key.toLowerCase()];
       if (control) this.heldControls[control] = false;
     };
+    const releaseControls = (): void => { Object.assign(this.heldControls, controlsTemplate); };
+    const onVisibilityChange = (): void => {
+      if (document.hidden) releaseControls();
+    };
     keyboard?.on('keydown', onKeyDown);
     keyboard?.on('keyup', onKeyUp);
+    window.addEventListener('blur', releaseControls);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     chapterView.append(panel);
     const cleanup = (): void => {
       keyboard?.off('keydown', onKeyDown);
       keyboard?.off('keyup', onKeyUp);
-      Object.assign(this.heldControls, controlsTemplate);
+      window.removeEventListener('blur', releaseControls);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      releaseControls();
       this.renderFlight = undefined;
       this.rocketMarker?.destroy();
       this.rocketMarker = undefined;

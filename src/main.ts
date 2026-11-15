@@ -46,6 +46,9 @@ function boot(): void {
   const game = StartGame('game-container');
 
   function open(chapter: ChapterInfo): void {
+    const lockMissionScroll = chapter.stage === 'Exploration' || chapter.stage === 'Establishing a presence';
+    document.documentElement.classList.toggle('mission-no-scroll', lockMissionScroll);
+    document.body.classList.toggle('mission-no-scroll', lockMissionScroll);
     game.scene.start(chapter.id);
     chapterLabel.textContent = `MISSION ${String(chapter.number).padStart(2, '0')} / ${chapter.title}`;
     home.hidden = true;
@@ -56,6 +59,8 @@ function boot(): void {
   for (const chapter of chapters) grid.append(chapterButton(chapter, open));
   app.querySelector<HTMLButtonElement>('#back-button')!.addEventListener('click', () => {
     game.scene.start('menu');
+    document.documentElement.classList.remove('mission-no-scroll');
+    document.body.classList.remove('mission-no-scroll');
     chapterView.hidden = true;
     home.hidden = false;
   });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   FLIGHT_WORLD,
   FLYBY_SCIENCE,
+  type FlybyState,
   collectFlybyScience,
   configureFlyby,
   initialFlybyState,
@@ -24,13 +25,28 @@ describe('piloted Moon flyby mission', () => {
     expect(state.path.length).toBeGreaterThan(1);
   });
 
-  it('requires all instruments and two lunar orbits before a safe Earth landing', () => {
+  it('auto-brakes the spacecraft when the player releases the thrusters', () => {
+    let coasting: FlybyState = {
+      ...launchFlyby(initialFlybyState),
+      phase: 'cruise',
+      x: 450,
+      y: 100,
+      vx: 25,
+      vy: 0,
+    };
+    for (let frame = 0; frame < 10; frame += 1) {
+      coasting = stepFlyby(coasting, idle, 0.075);
+    }
+
+    expect(Math.hypot(coasting.vx, coasting.vy)).toBeLessThan(12);
+  });
+
+  it('starts the return flight as soon as all readings are collected', () => {
     let state: typeof initialFlybyState = {
       ...launchFlyby(initialFlybyState),
       phase: 'cruise',
       x: FLIGHT_WORLD.moon.x + 120,
       y: FLIGHT_WORLD.moon.y,
-      orbits: 2,
     };
 
     for (const science of Object.values(FLYBY_SCIENCE)) {
@@ -58,44 +74,47 @@ describe('piloted Moon flyby mission', () => {
     expect(blocked.message).toContain('Fly closer to the Moon');
   });
 
-  it('applies the selected fuel, battery, mission time, and blackout autopilot plan', () => {
-    const plan = { fuelLoad: 10, energyStore: 25, missionMinutes: 60, autopilot: false };
+  it('applies the selected fuel and battery reserves', () => {
+    const plan = { fuelLoad: 10, energyStore: 25 };
     const configured = configureFlyby(initialFlybyState, plan);
     expect(configured.fuel).toBe(10);
     expect(configured.battery).toBe(25);
-    expect(configured.missionMinutes).toBe(60);
-    expect(configured.autopilot).toBe(false);
 
     const lowFuel = stepFlyby(launchFlyby(configured), { ...idle, up: true }, 0.08);
     const fullFuel = stepFlyby(launchFlyby(initialFlybyState), { ...idle, up: true }, 0.08);
     expect(lowFuel.vy).toBeLessThan(fullFuel.vy);
   });
 
-  it('spends battery on science and only permits far-side measurements with autopilot enabled', () => {
+  it('spends battery on science but never drains it while waiting', () => {
     const nearMoon = {
       ...launchFlyby(initialFlybyState),
       phase: 'cruise' as const,
       x: FLIGHT_WORLD.moon.x + 120,
       y: FLIGHT_WORLD.moon.y,
-      orbits: 2,
       battery: 20,
     };
     const measured = collectFlybyScience(nearMoon, FLYBY_SCIENCE.photos);
     expect(measured.battery).toBe(5);
 
-    const farSide = { ...nearMoon, x: 900, y: 374, signal: 18 };
-    expect(collectFlybyScience(farSide, FLYBY_SCIENCE.photos).science).toContain(FLYBY_SCIENCE.photos);
-    const manual = { ...farSide, autopilot: false };
-    expect(collectFlybyScience(manual, FLYBY_SCIENCE.photos).message).toContain('autopilot');
+    let waiting: FlybyState = nearMoon;
+    for (let frame = 0; frame < 60; frame += 1) {
+      waiting = stepFlyby(waiting, idle, 0.08);
+    }
+    expect(waiting.battery).toBe(nearMoon.battery);
   });
 
-  it('ends a flight that exceeds its selected mission-time limit', () => {
-    const state = {
+  it('keeps the flight available past the former mission-time limit', () => {
+    let state: FlybyState = {
       ...launchFlyby(initialFlybyState),
-      phase: 'cruise' as const,
-      elapsedMinutes: 29.99,
-      missionMinutes: 30,
+      phase: 'cruise',
+      x: 400,
+      y: 100,
     };
-    expect(stepFlyby(state, idle, 0.08).phase).toBe('crashed');
+    for (let frame = 0; frame < 600; frame += 1) {
+      state = stepFlyby(state, idle, 0.08);
+    }
+
+    expect(state.phase).toBe('cruise');
+    expect(state.battery).toBe(initialFlybyState.battery);
   });
 });

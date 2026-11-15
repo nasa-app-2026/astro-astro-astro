@@ -59,6 +59,40 @@ describe('piloted rover cargo mission', () => {
     expect(stepCargoFlight(flight, idleCargo, 0.08).phase).toBe('crashed');
   });
 
+  it('auto-brakes the cargo rocket when the player releases the thrusters', () => {
+    const flight = {
+      ...launchRoverMission(chooseRoverSite(initialRobotsState, ROVER_SITES.sunnyRidge)),
+      x: 450,
+      y: 100,
+      vx: 25,
+      vy: 0,
+    };
+    let coasting = flight;
+    for (let frame = 0; frame < 10; frame += 1) {
+      coasting = stepCargoFlight(coasting, idleCargo, 0.075);
+    }
+
+    expect(Math.hypot(coasting.vx, coasting.vy)).toBeLessThan(12);
+  });
+
+  it('auto-brakes the rover when the player releases the drive controls', () => {
+    const landed = landCargoRocket({
+      ...launchRoverMission(chooseRoverSite(initialRobotsState, ROVER_SITES.sunnyRidge)),
+      phase: 'approach',
+      x: CARGO_WORLD.sites.sunnyRidge.x,
+      y: CARGO_WORLD.sites.sunnyRidge.y,
+      vx: 0,
+      vy: 0,
+    });
+    const rover = { ...deployRover(landed), x: 20, y: 20, vx: 14, vy: 0 };
+    let coasting = rover;
+    for (let frame = 0; frame < 10; frame += 1) {
+      coasting = stepRover(coasting, idleRover, 0.075);
+    }
+
+    expect(Math.hypot(coasting.vx, coasting.vy)).toBeLessThan(8);
+  });
+
   it('switches from a soft landing to continuous rover drive and unique photo jobs', () => {
     const landed = landCargoRocket({
       ...launchRoverMission(chooseRoverSite(initialRobotsState, ROVER_SITES.sunnyRidge)),

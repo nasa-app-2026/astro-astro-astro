@@ -19,8 +19,6 @@ export type FlightPoint = { x: number; y: number };
 export type FlightPlan = {
   fuelLoad: number;
   energyStore: number;
-  missionMinutes: number;
-  autopilot: boolean;
 };
 export type FlybyState = {
   phase: FlybyPhase;
@@ -31,16 +29,8 @@ export type FlybyState = {
   heading: number;
   fuel: number;
   battery: number;
-  signal: number;
-  missionMinutes: number;
-  elapsedMinutes: number;
-  autopilot: boolean;
   science: FlybyScience[];
   doseMsv: number;
-  orbits: number;
-  orbitSweep: number;
-  orbitDirection: number;
-  lastMoonAngle: number | null;
   path: FlightPoint[];
   message: string;
 };
@@ -62,8 +52,6 @@ export const FLIGHT_ASTEROIDS = [
 export const DEFAULT_FLIGHT_PLAN: FlightPlan = {
   fuelLoad: 100,
   energyStore: 100,
-  missionMinutes: 90,
-  autopilot: true,
 };
 
 export const FLYBY_SCIENCE_LABELS: Record<FlybyScience, string> = {
@@ -82,18 +70,10 @@ export const initialFlybyState: FlybyState = {
   heading: Math.PI / 2,
   fuel: DEFAULT_FLIGHT_PLAN.fuelLoad,
   battery: DEFAULT_FLIGHT_PLAN.energyStore,
-  signal: 100,
-  missionMinutes: DEFAULT_FLIGHT_PLAN.missionMinutes,
-  elapsedMinutes: 0,
-  autopilot: DEFAULT_FLIGHT_PLAN.autopilot,
   science: [],
   doseMsv: 0,
-  orbits: 0,
-  orbitSweep: 0,
-  orbitDirection: 0,
-  lastMoonAngle: null,
   path: [],
-  message: 'Mission Control is ready. Launch the uncrewed survey rocket, then fly it yourself with the arrow keys.',
+  message: 'Mission Control is ready. Plan your fuel and power, then fly the uncrewed survey rocket with the arrow keys.',
 };
 
 const SCIENCE_POWER_COST: Record<FlybyScience, number> = {
@@ -105,13 +85,6 @@ const SCIENCE_POWER_COST: Record<FlybyScience, number> = {
 
 const distance = (a: FlightPoint, b: FlightPoint): number => Math.hypot(a.x - b.x, a.y - b.y);
 const moonDistance = (state: FlybyState): number => distance(state, FLIGHT_WORLD.moon);
-const wrapAngle = (angle: number): number => {
-  let wrapped = angle;
-  while (wrapped > Math.PI) wrapped -= Math.PI * 2;
-  while (wrapped < -Math.PI) wrapped += Math.PI * 2;
-  return wrapped;
-};
-
 function isScienceAvailable(state: FlybyState, science: FlybyScience): boolean {
   const lunarDistance = moonDistance(state);
   switch (science) {
@@ -126,40 +99,9 @@ function isScienceAvailable(state: FlybyState, science: FlybyScience): boolean {
   }
 }
 
-function isSignalBlocked(state: FlybyState): boolean {
-  const earthToShip = { x: state.x - FLIGHT_WORLD.earth.x, y: state.y - FLIGHT_WORLD.earth.y };
-  const earthToMoon = { x: FLIGHT_WORLD.moon.x - FLIGHT_WORLD.earth.x, y: FLIGHT_WORLD.moon.y - FLIGHT_WORLD.earth.y };
-  const lengthSquared = earthToShip.x ** 2 + earthToShip.y ** 2;
-  if (lengthSquared === 0) return false;
-  const projection = Math.max(0, Math.min(1, (earthToMoon.x * earthToShip.x + earthToMoon.y * earthToShip.y) / lengthSquared));
-  const closest = {
-    x: FLIGHT_WORLD.earth.x + projection * earthToShip.x,
-    y: FLIGHT_WORLD.earth.y + projection * earthToShip.y,
-  };
-  return projection < 1 && distance(closest, FLIGHT_WORLD.moon) < FLIGHT_WORLD.moon.radius + 10;
-}
-
-function updateOrbitCount(state: FlybyState): Pick<FlybyState, 'orbits' | 'orbitSweep' | 'orbitDirection' | 'lastMoonAngle'> {
-  const radius = moonDistance(state);
-  if (radius < 70 || radius > 220) return { ...state, orbitSweep: 0, orbitDirection: 0, lastMoonAngle: null };
-  const angle = Math.atan2(state.y - FLIGHT_WORLD.moon.y, state.x - FLIGHT_WORLD.moon.x);
-  if (state.lastMoonAngle === null) return { ...state, lastMoonAngle: angle };
-
-  const turn = wrapAngle(angle - state.lastMoonAngle);
-  const direction = state.orbitDirection || Math.sign(turn);
-  const orbitSweep = state.orbitSweep + turn * direction;
-  const completedOrbits = Math.floor(orbitSweep / (Math.PI * 2));
-  return {
-    orbits: state.orbits + completedOrbits,
-    orbitSweep: orbitSweep - completedOrbits * Math.PI * 2,
-    orbitDirection: direction,
-    lastMoonAngle: angle,
-  };
-}
-
 export function launchFlyby(state: FlybyState): FlybyState {
   if (state.phase !== 'briefing') return state;
-  return { ...state, phase: 'launching', message: 'Liftoff! Hold ↑ / W to climb. Left and right steer; ↓ / S fires the reverse thruster.' };
+  return { ...state, phase: 'launching', message: 'Liftoff! Hold ↑ / W to climb. Left and right steer; ↓ / X fires the reverse thruster. There is no mission clock.' };
 }
 
 export function configureFlyby(state: FlybyState, plan: FlightPlan): FlybyState {
@@ -168,8 +110,6 @@ export function configureFlyby(state: FlybyState, plan: FlightPlan): FlybyState 
     ...state,
     fuel: Math.max(0, Math.min(100, plan.fuelLoad)),
     battery: Math.max(0, Math.min(100, plan.energyStore)),
-    missionMinutes: Math.max(30, plan.missionMinutes),
-    autopilot: plan.autopilot,
   };
 }
 
@@ -178,10 +118,8 @@ export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeco
   const dt = Math.max(0, Math.min(deltaSeconds, 0.08));
   if (dt === 0) return state;
 
-  const radioBlocked = state.signal < 100;
-  const activeControls = radioBlocked ? { left: false, right: false, up: false, down: false } : controls;
-  const horizontal = Number(activeControls.right) - Number(activeControls.left);
-  const vertical = Number(activeControls.up) - Number(activeControls.down);
+  const horizontal = Number(controls.right) - Number(controls.left);
+  const vertical = Number(controls.up) - Number(controls.down);
   const thrust = Math.abs(horizontal) + Math.abs(vertical);
   const fuelScale = state.fuel <= 0 ? 0 : 0.18 + state.fuel / 100 * 0.82;
   const powerScale = state.battery <= 0 ? 0 : 1;
@@ -201,7 +139,7 @@ export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeco
 
   let vx = state.vx + ax * dt;
   let vy = state.vy + ay * dt;
-  const drag = Math.pow(0.998, dt * 60);
+  const drag = Math.pow(thrust ? 0.998 : 0.9, dt * 60);
   vx *= drag;
   vy *= drag;
   const speed = Math.hypot(vx, vy);
@@ -224,18 +162,14 @@ export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeco
     vy,
     heading: Math.hypot(vx, vy) > 1 ? Math.atan2(vy, vx) : state.heading,
     fuel: Math.max(0, state.fuel - dt * thrust * fuelScale * 1.1),
-    battery: Math.max(0, state.battery - dt * (thrust ? 0.5 : 0.025)),
-    elapsedMinutes: state.elapsedMinutes + dt * 2,
-    signal: state.battery <= 0 ? 0 : isSignalBlocked({ ...state, x, y }) ? 18 : 100,
+    battery: Math.max(0, state.battery - dt * thrust * 0.5),
   };
-  const orbitState = updateOrbitCount(flightState);
-  const eligible = flightState.science.length === 4 && orbitState.orbits >= 2;
+  const eligible = flightState.science.length === 4;
   const returnedToEarth = flightState.phase === 'returning'
     && distance(flightState, FLIGHT_WORLD.earth) < 55
     && Math.hypot(vx, vy) < 22;
   const asteroid = FLIGHT_ASTEROIDS.find((rock) => distance(flightState, rock) < rock.radius + 8);
   const collision = moonDistance(flightState) < FLIGHT_WORLD.moon.radius || Boolean(asteroid);
-  const timeExpired = flightState.elapsedMinutes >= flightState.missionMinutes && !returnedToEarth;
   const path = flightState.path;
   const lastPoint = path[path.length - 1];
   const nextPath = !lastPoint || distance(lastPoint, flightState) >= 12
@@ -244,31 +178,25 @@ export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeco
 
   return {
     ...flightState,
-    ...orbitState,
-    phase: collision || timeExpired ? 'crashed' : returnedToEarth ? 'complete' : eligible ? 'returning' : flightState.phase,
+    phase: collision ? 'crashed' : returnedToEarth ? 'complete' : eligible ? 'returning' : flightState.phase,
     path: nextPath,
     message: collision
       ? asteroid ? 'Asteroid collision! Use the first-person camera and small thruster corrections to avoid space rocks.' : 'The spacecraft hit the Moon. Restart the flight and try a wider approach.'
-      : timeExpired
-        ? 'Mission time ran out before landing. Restart and choose a longer flight plan.'
       : returnedToEarth
         ? 'Safe landing! The spacecraft is home with all four science records.'
         : eligible
-          ? 'Two lunar orbits complete. All science jobs are done; fly back toward Earth and slow down for a safe landing.'
-          : flightState.signal < 100
-            ? 'Earth radio is blocked by the Moon. Your spacecraft is still flying on its own.'
-            : state.message,
+          ? 'All science jobs are done. Fly back toward Earth and slow down for a safe landing.'
+          : state.message,
   };
 }
 
 export function collectFlybyScience(state: FlybyState, science: FlybyScience): FlybyState {
   if (!['launching', 'cruise'].includes(state.phase) || state.science.includes(science)) return state;
-  if (state.signal < 100 && !state.autopilot) return { ...state, message: 'Earth lost contact behind the Moon. The sensor can only run there if you enabled autopilot before launch.' };
   if (!isScienceAvailable(state, science)) {
     const hint = science === FLYBY_SCIENCE.gravity || science === FLYBY_SCIENCE.photos
       ? 'Fly closer to the Moon first.'
       : 'Climb above the atmosphere first.';
-    return { ...state, message: `${FLYBY_SCIENCE_LABELS[science]} need a different position. ${hint}` };
+    return { ...state, message: `${FLYBY_SCIENCE_LABELS[science]} unavailable here. ${hint}` };
   }
   if (state.battery < SCIENCE_POWER_COST[science]) return { ...state, message: 'Battery reserve is too low for that instrument. Save power before the next science job.' };
 
@@ -286,8 +214,8 @@ export function collectFlybyScience(state: FlybyState, science: FlybyScience): F
     doseMsv: state.doseMsv + (science === FLYBY_SCIENCE.radiation ? 1 : 0),
     message: result[science],
   };
-  return scienceList.length === 4 && state.orbits >= 2
-    ? { ...updated, phase: 'returning', message: 'All science jobs are done and two orbits are complete. Fly back to Earth for landing.' }
+  return scienceList.length === 4
+    ? { ...updated, phase: 'returning', message: 'All science jobs are done. Fly back to Earth for landing.' }
     : updated;
 }
 
