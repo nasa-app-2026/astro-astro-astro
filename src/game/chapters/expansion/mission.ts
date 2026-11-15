@@ -150,6 +150,22 @@ export function canPlaceExpansionStructure(
     return !occupiedByStructure && !occupiedByAstronaut && adjacentToStructure;
 }
 
+export function applyExpansionFlareExposure(
+    suitIntegrity: number,
+    radiationDose: number,
+    seconds: number,
+    protectedByOutpost: boolean
+): { suitIntegrity: number; radiationDose: number } {
+    if (protectedByOutpost) {
+        return { suitIntegrity, radiationDose };
+    }
+
+    return {
+        suitIntegrity: Math.max(0, suitIntegrity - 9 * seconds),
+        radiationDose: Math.min(100, radiationDose + 22 * seconds)
+    };
+}
+
 export function applyExpansionDustEvent(
     suitIntegrity: number,
     radiationDose: number,

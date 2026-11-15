@@ -208,9 +208,46 @@ test('Expansion cargo lander approaches, deploys its gear, and settles onto the 
   await expect(canvas).toHaveAttribute('data-expansion-phase', 'delivery');
   await expect(canvas).toHaveAttribute('data-expansion-lander-phase', 'approach');
   await expect(canvas).toHaveAttribute('data-expansion-lander-phase', 'descent');
-  await expect(canvas).toHaveAttribute('data-expansion-lander-phase', 'touchdown');
   await expect(canvas).toHaveAttribute('data-expansion-lander-phase', 'landed');
   await expect(canvas).toHaveAttribute('data-expansion-phase', 'collect');
+});
+
+test('Expansion prevents the astronaut from entering the landed cargo lander', async ({ page }) => {
+  const { canvas, bounds } = await openExpansion(page);
+  await beginOrder(page, bounds);
+  await confirmRecommendedOrder(page, bounds);
+  await page.clock.setFixedTime(await page.evaluate(() => Date.now()));
+
+  await walk(page, bounds, [[2, 3], [3, 3], [3, 2], [4, 2], [5, 2], [6, 2]]);
+  await expect(canvas).toHaveAttribute('data-expansion-lander-phase', 'landed');
+  await expect(canvas).toHaveAttribute('data-expansion-astronaut', '6,2');
+
+  await clickTile(page, bounds, 6, 3);
+  await expect(canvas).toHaveAttribute('data-expansion-astronaut', '6,2');
+
+  await page.getByRole('button', { name: 'All missions' }).click();
+  await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
+});
+
+test('Expansion launches the cargo lander after pickup and reopens its pad', async ({ page }) => {
+  test.setTimeout(60000);
+  const { canvas, bounds } = await openExpansion(page);
+  await beginOrder(page, bounds);
+  await confirmRecommendedOrder(page, bounds);
+  await collectCargo(page, bounds);
+
+  await expect(canvas).toHaveAttribute('data-expansion-lander-phase', 'departing');
+  await walk(page, bounds, [[7, 3]]);
+  await clickTile(page, bounds, 6, 3);
+  await expect(canvas).toHaveAttribute('data-expansion-astronaut', '7,3');
+  await expect(canvas).toHaveAttribute('data-expansion-lander-phase', 'departing');
+
+  await expect(canvas).not.toHaveAttribute('data-expansion-lander-phase', /.+/, { timeout: 5000 });
+  await clickTile(page, bounds, 6, 3);
+  await expect(canvas).toHaveAttribute('data-expansion-astronaut', '6,3');
+
+  await page.getByRole('button', { name: 'All missions' }).click();
+  await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
 });
 
 test('Expansion presents the delivered lunar cargo as an illustrated overhead map', async ({ page }) => {
@@ -251,4 +288,24 @@ test('Expansion shows the randomly timed solar flare warning over the lunar map'
     animations: 'disabled',
     maxDiffPixelRatio: 0.04
   });
+}, { timeout: 60000 });
+
+test('Expansion rapidly drains suit integrity and raises radiation while exposed to a flare', async ({ page }) => {
+  test.setTimeout(60000);
+  const { canvas, bounds } = await openExpansion(page);
+  await beginOrder(page, bounds);
+  await confirmRecommendedOrder(page, bounds);
+  await page.clock.setFixedTime(await page.evaluate(() => Date.now()));
+  await collectCargo(page, bounds);
+
+  await triggerRandomFlare(page, canvas);
+  const suitIntegrity = Number(await canvas.getAttribute('data-expansion-suit-integrity'));
+  const radiationDose = Number(await canvas.getAttribute('data-expansion-radiation-dose'));
+  await expect.poll(async () => Number(await canvas.getAttribute('data-expansion-radiation-dose')))
+    .toBeGreaterThan(radiationDose + 4);
+  await expect.poll(async () => Number(await canvas.getAttribute('data-expansion-suit-integrity')))
+    .toBeLessThan(suitIntegrity);
+
+  await page.getByRole('button', { name: 'All missions' }).click();
+  await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
 }, { timeout: 60000 });

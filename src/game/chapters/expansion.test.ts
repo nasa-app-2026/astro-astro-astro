@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+    applyExpansionFlareExposure,
     applyExpansionDustEvent,
     canBuildExpansionRecipe,
     canPlaceExpansionStructure,
@@ -69,6 +70,24 @@ describe('Expansion rover dust and solar event', () => {
             .toBe(EXPANSION_SOLAR_FLARE_INTERVAL_MIN_SECONDS);
         expect(getRandomExpansionSolarFlareInterval(() => 0.999))
             .toBe(EXPANSION_SOLAR_FLARE_INTERVAL_MAX_SECONDS);
+    });
+
+    it('rapidly drains suit integrity and raises radiation dose outside the outpost', () => {
+        expect(applyExpansionFlareExposure(100, 0, 1, false)).toEqual({
+            suitIntegrity: 91,
+            radiationDose: 22
+        });
+        expect(applyExpansionFlareExposure(8, 92, 1, false)).toEqual({
+            suitIntegrity: 0,
+            radiationDose: 100
+        });
+    });
+
+    it('keeps the astronaut protected from flare exposure inside the outpost', () => {
+        expect(applyExpansionFlareExposure(73, 18, 3, true)).toEqual({
+            suitIntegrity: 73,
+            radiationDose: 18
+        });
     });
 
     it('damages suit integrity but shields the astronaut from the radiation spike at the outpost', () => {

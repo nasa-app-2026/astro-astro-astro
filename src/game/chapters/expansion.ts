@@ -1,6 +1,7 @@
 import { ChapterScene } from './ChapterScene';
 import { chapters } from './catalog';
 import {
+    applyExpansionFlareExposure,
     applyExpansionDustEvent,
     canBuildExpansionRecipe,
     canPlaceExpansionStructure,
@@ -115,7 +116,7 @@ const options: readonly BuildingOption[] = [
 
 const MAX_RESOURCE = 100;
 const SOLAR_FLARE_WARNING_SECONDS = 3;
-type CargoLanderAnimationPhase = 'approach' | 'descent' | 'touchdown' | 'landed';
+type CargoLanderAnimationPhase = 'approach' | 'descent' | 'touchdown' | 'landed' | 'departing';
 
 export class ExpansionScene extends ChapterScene {
     private readonly boardLeft = 24;
@@ -182,6 +183,7 @@ export class ExpansionScene extends ChapterScene {
     private orderConfirmLabel?: Phaser.GameObjects.Text;
     private cargoPadMarker?: Phaser.GameObjects.Container;
     private cargoLander?: Phaser.GameObjects.Container;
+    private cargoEnginePlume?: Phaser.GameObjects.Graphics;
     private cargoLanderPhase?: CargoLanderAnimationPhase;
     private readonly stars: Phaser.GameObjects.Arc[] = [];
     private solarFlareLayer?: Phaser.GameObjects.Container;
@@ -403,6 +405,7 @@ export class ExpansionScene extends ChapterScene {
     private updateResources(seconds: number, moved: boolean, direction?: Point) {
         const atHome = this.isNearStructure('outpost');
         const atShelter = this.isNearStructure('shelter');
+        const flareWarningActive = this.phase === 'hazard' && this.dustEventStatus === 'warning';
 
         if (moved) {
             const oxygenCost = this.hasStructure('garage') ? 0.85 : this.hasStructure('recycler') ? 1.1 : 1.5;
@@ -426,13 +429,22 @@ export class ExpansionScene extends ChapterScene {
             this.energy = Math.min(MAX_RESOURCE, this.energy + 0.12 * seconds);
         }
 
-        if (this.suitIntegrity < 60 && !atHome && !atShelter && this.repairTimer === 0) {
+        if (flareWarningActive) {
+            const resources = applyExpansionFlareExposure(
+                this.suitIntegrity,
+                this.radiationDose,
+                seconds,
+                atHome
+            );
+            this.suitIntegrity = resources.suitIntegrity;
+            this.radiationDose = resources.radiationDose;
+        } else if (this.suitIntegrity < 60 && !atHome && !atShelter && this.repairTimer === 0) {
             this.radiationDose = Math.min(MAX_RESOURCE, this.radiationDose + 0.7 * seconds);
         }
 
         if (this.oxygen <= 0) {
             this.failMission('Your oxygen ran out. Return to the outpost sooner next time.');
-        } else if (this.radiationDose >= MAX_RESOURCE) {
+        } else if (this.radiationDose >= MAX_RESOURCE && !flareWarningActive) {
             this.failMission('Your radiation warning reached its limit. Repair your suit sooner next time.');
         }
     }
@@ -447,6 +459,16 @@ export class ExpansionScene extends ChapterScene {
             return false;
         }
         if (this.structures.some((structure) => structure.x === next.x && structure.y === next.y)) {
+            return false;
+        }
+        if (
+            next.x === 6
+            && next.y === 3
+            && (this.cargoLanderPhase === 'descent'
+                || this.cargoLanderPhase === 'touchdown'
+                || this.cargoLanderPhase === 'landed'
+                || this.cargoLanderPhase === 'departing')
+        ) {
             return false;
         }
 
@@ -491,7 +513,7 @@ export class ExpansionScene extends ChapterScene {
         this.missionScore += 10;
         const collected = this.crates.filter((item) => item.collected).length;
         if (collected === this.crates.length) {
-            this.clearCargoDeliveryVisuals();
+            this.departCargoLander();
             if (this.phase === 'hazard') {
                 this.resumePhaseAfterDustEvent = 'build';
                 this.message = `Cargo collected. Reach the outpost in ${Math.ceil(this.dustEventTimer)} seconds.`;
@@ -586,7 +608,7 @@ export class ExpansionScene extends ChapterScene {
         flare.add(wash);
         this.tweens.add({
             targets: wash,
-            alpha: { from: 0.04, to: 0.22 },
+            alpha: { from: 0.12, to: 0.34 },
             duration: 230,
             yoyo: true,
             repeat: -1,
@@ -643,12 +665,12 @@ export class ExpansionScene extends ChapterScene {
 
         const banner = this.add.container(0, 0);
         const bannerFrame = this.add.graphics();
-        bannerFrame.fillStyle(0x261709, 0.96);
-        bannerFrame.fillRoundedRect(192, 154, 304, 34, 8);
-        bannerFrame.lineStyle(2, 0xffc72f, 1);
-        bannerFrame.strokeRoundedRect(192, 154, 304, 34, 8);
+        bannerFrame.fillStyle(0x36100d, 0.98);
+        bannerFrame.fillRoundedRect(177, 150, 334, 44, 8);
+        bannerFrame.lineStyle(2, 0xff684f, 1);
+        bannerFrame.strokeRoundedRect(177, 150, 334, 44, 8);
         banner.add(bannerFrame);
-        banner.add(this.add.text(344, 163, 'SOLAR FLARE', {
+        banner.add(this.add.text(344, 158, 'SOLAR FLARE', {
             fontFamily: 'Arial',
             fontSize: '20px',
             color: '#ffe34a',
@@ -656,10 +678,10 @@ export class ExpansionScene extends ChapterScene {
             stroke: '#3c2200',
             strokeThickness: 3
         }).setOrigin(0.5));
-        banner.add(this.add.text(344, 180, 'GET TO THE OUTPOST NOW', {
+        banner.add(this.add.text(344, 181, 'RADIATION SPIKE - REACH THE OUTPOST', {
             fontFamily: 'Arial',
             fontSize: '9px',
-            color: '#fff2bd',
+            color: '#ffd0c3',
             fontStyle: 'bold'
         }).setOrigin(0.5));
         this.hudLayer.add(banner);
@@ -698,9 +720,11 @@ export class ExpansionScene extends ChapterScene {
             const tile = this.pointerTile(pointer.x, pointer.y);
             const distance = Math.abs(tile.x - this.astronaut.x) + Math.abs(tile.y - this.astronaut.y);
             if (distance === 1 && this.repairTimer === 0) {
-                    const direction = { x: tile.x - this.astronaut.x, y: tile.y - this.astronaut.y };
-                    this.moveAstronaut(direction);
+                const direction = { x: tile.x - this.astronaut.x, y: tile.y - this.astronaut.y };
+                const moved = this.moveAstronaut(direction);
+                if (moved) {
                     this.updateResources(0, true, direction);
+                }
                 this.refreshHud();
             }
             return;
@@ -1152,6 +1176,7 @@ export class ExpansionScene extends ChapterScene {
         enginePlume.fillStyle(0xffedb0, 0.94);
         enginePlume.fillTriangle(-4, 13, 4, 13, 0, 34);
         lander.add(enginePlume);
+        this.cargoEnginePlume = enginePlume;
         const leftLeg = this.add.rectangle(-17, 19, 4, 24, 0x879391)
             .setScale(1, 0.2);
         const rightLeg = this.add.rectangle(17, 19, 4, 24, 0x879391)
@@ -1283,9 +1308,65 @@ export class ExpansionScene extends ChapterScene {
             this.cargoLander.destroy();
             this.cargoLander = undefined;
         }
-        this.cargoPadMarker?.destroy();
+        this.cargoEnginePlume = undefined;
+        if (this.cargoPadMarker) {
+            this.tweens.killTweensOf(this.cargoPadMarker);
+            this.cargoPadMarker.destroy();
+        }
         this.cargoPadMarker = undefined;
         this.cargoLanderPhase = undefined;
+    }
+
+    private departCargoLander() {
+        const lander = this.cargoLander;
+        if (!lander) {
+            throw new Error('Cannot animate cargo liftoff because the lander is missing.');
+        }
+
+        this.cargoLanderPhase = 'departing';
+        this.updateExpansionDiagnostics();
+        this.createLandingDust(this.tileCenter({ x: 6, y: 3 }));
+
+        if (this.cargoEnginePlume) {
+            this.tweens.killTweensOf(this.cargoEnginePlume);
+            this.tweens.add({
+                targets: this.cargoEnginePlume,
+                alpha: { from: 0.65, to: 1 },
+                scaleY: { from: 0.9, to: 1.8 },
+                duration: 220,
+                yoyo: true,
+                repeat: 3,
+                ease: 'Sine.easeInOut'
+            });
+        }
+
+        if (this.cargoPadMarker) {
+            this.tweens.add({
+                targets: this.cargoPadMarker,
+                alpha: 0,
+                duration: 650,
+                ease: 'Sine.easeOut'
+            });
+        }
+
+        this.tweens.add({
+            targets: lander,
+            x: lander.x + 68,
+            y: lander.y - 210,
+            scale: 0.82,
+            angle: 10,
+            alpha: 0,
+            duration: 1850,
+            delay: 220,
+            ease: 'Cubic.easeIn',
+            onComplete: () => {
+                if (this.cargoLander !== lander) {
+                    return;
+                }
+                this.clearCargoDeliveryVisuals();
+                this.updateExpansionDiagnostics();
+            }
+        });
     }
 
     private formatRecipe(recipe: Partial<Record<ExpansionMaterialId, number>>) {
@@ -2569,6 +2650,7 @@ export class ExpansionScene extends ChapterScene {
         canvas.dataset.expansionOrderValid = String(this.canConfirmOrder());
         canvas.dataset.expansionInventory = JSON.stringify(this.inventory);
         canvas.dataset.expansionBuilds = String(this.structures.length - 1);
+        canvas.dataset.expansionAstronaut = `${this.astronaut.x},${this.astronaut.y}`;
         canvas.dataset.expansionHazard = this.dustEventStatus;
         canvas.dataset.expansionHazardTimer = String(Math.ceil(this.dustEventTimer));
         canvas.dataset.expansionNextFlare = String(
