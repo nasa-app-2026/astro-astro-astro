@@ -7,7 +7,7 @@ export const food = {
     sources: ["SRC-R15B-02"],
     credit: "NASA",
     young: "🚀 Right now, every bit of astronaut food is packed on Earth and sent up!",
-    older: "Today all astronaut food is carried from Earth; the station gets food on cargo ships."
+    older: "Today all astronaut food is carried from Earth; the space station gets food on cargo ships.",
   },
   issMenu: {
     id: "food.issMenu",
@@ -16,8 +16,8 @@ export const food = {
     label: "known",
     sources: ["SRC-R15B-02"],
     credit: "NASA",
-    young: "🍲 The space station menu has about 200 foods, from breakfasts to snacks to soups!",
-    older: "The space station menu has about 200 foods: drinks, breakfasts, snacks, fruit and nuts, meat and fish, vegetables, soups and tortillas."
+    young: "🍽️ The space station menu has about 200 foods, from breakfasts to soups to snacks!",
+    older: "The space station menu has about 200 foods: drinks, breakfasts, snacks, fruit and nuts, meat and fish, vegetables, sauces and tortillas.",
   },
   foodShelfLife: {
     id: "food.foodShelfLife",
@@ -26,8 +26,8 @@ export const food = {
     label: "known",
     sources: ["SRC-R15B-02"],
     credit: "NASA",
-    young: "⏳ Space station food must stay safe to eat for 3 years. Food for faraway trips may need to last 5!",
-    older: "Station food must stay safe to eat for 3 years. Food for far-away missions may need to last 5 years with no new deliveries."
+    young: "🥫 Space station food must stay safe to eat for 3 years. Food for faraway trips may need to last 5!",
+    older: "Station food must stay safe to eat for 3 years; food for far-away missions may need to last 5 years with no new deliveries.",
   },
   packedFoodPerDay: {
     id: "food.packedFoodPerDay",
@@ -37,7 +37,7 @@ export const food = {
     sources: ["SRC-R15B-05"],
     credit: "NASA",
     young: "🎒 Each astronaut needs about 1.8 kg of packed food a day, packaging included.",
-    older: "Roughly 1.8 kg of packed food per astronaut per day, including packaging (approximate)."
+    older: "Roughly 1.8 kg of packed food per astronaut per day, including packaging (approximate).",
   },
   calories: {
     id: "food.calories",
@@ -46,26 +46,26 @@ export const food = {
     label: "estimate",
     sources: ["SRC-R15B-06"],
     credit: "NASA",
-    young: "⚡ Astronauts eat about 2,500 to 3,000 calories a day. Space work is hungry work!",
-    older: "Roughly 2,500 to 3,000 calories per day, depending on the person's size and age."
+    young: "🍔 Astronauts eat about 2,500 to 3,000 calories a day. Space work is hungry work!",
+    older: "Roughly 2,500 to 3,000 calories per day, depending on the person's size and age.",
   },
   orionNoFridge: {
     id: "food.orionNoFridge",
     label: "known",
     sources: ["SRC-R15B-03"],
     credit: "NASA Artemis II",
-    young: "🚫 Orion has no fridge, so Artemis II had no fresh food.",
-    older: "Orion has no fridge, so Artemis II had no fresh food. The crew added water from a dispenser and heated meals in a small \"briefcase\" warmer."
+    young: "🚫 Orion has no fridge, so Artemis II had no fresh food. Astronauts added water and used a briefcase-sized food warmer!",
+    older: "Orion has no fridge, so Artemis II had no fresh food. The crew added water from a dispenser and heated meals in a small 'briefcase' warmer.",
   },
   cropAreaFullDiet: {
     id: "food.cropAreaFullDiet",
     value: 65,
     unit: "m²",
     label: "estimate",
-    sources: ["SRC-R15A-02"],
+    sources: ["SRC-R17A-01"],
     credit: "NASA planning book (BVAD)",
-    young: "🌱 Growing almost all of one person's food would need about 65 m² of plants. That's bigger than a classroom floor!",
-    older: "Growing almost all of one person's diet would need about 65 m² of crops. Salad alone needs about 1.4 m²; packed food would still give most of the nutrition."
+    young: "🌱 Growing almost all of one person's food would need about 65 m² of crops. That's bigger than a classroom floor!",
+    older: "Growing almost all of one person's diet would need about 65 m² of crops. Salad alone needs about 1.4 m²; packed food would still give most of the nutrition.",
   },
   plantPower: {
     id: "food.plantPower",
@@ -75,7 +75,7 @@ export const food = {
     sources: ["SRC-R17A-01"],
     credit: "NASA planning book (BVAD)",
     young: "💡 A plant room uses about 2.6 kW of power for every square metre of plants, mostly for the lamps!",
-    older: "A plant chamber uses about 2.6 kW for each square metre of plants, mostly for the lamps (lamps about 2.1 kW, plus fans and pumps). Do not claim a big LED saving."
+    older: "A plant chamber uses about 2.6 kW for each square metre of plants (lamps about 2.1 kW, plus fans and pumps). Do not claim a big LED electricity saving.",
   },
   gramsPerKwh: {
     id: "food.gramsPerKwh",
@@ -84,8 +84,8 @@ export const food = {
     label: "estimate",
     sources: ["SRC-R17A-01"],
     credit: "NASA planning book (BVAD)",
-    young: "⚡ One kWh of electricity grows only 2 to 10 grams of plant. Growing food costs lots of power!",
-    older: "One kWh of electricity grows only 2 to 10 grams of plant."
+    young: "🌱 One kWh of electricity grows only 2 to 10 grams of plant. Growing food costs lots of power!",
+    older: "One kWh of electricity grows about only 2–10 grams of plant.",
   },
   plantWater: {
     id: "food.plantWater",
@@ -95,7 +95,7 @@ export const food = {
     sources: ["SRC-R17A-01"],
     credit: "NASA planning book (BVAD)",
     young: "💧 Plants drink about 4 litres per square metre a day, but most comes back out of their leaves and can be collected!",
-    older: "Plants need about 4 litres of water per square metre per day, but most of it leaves as water vapour that can be collected."
+    older: "Plants need about 4 litres of water per square metre per day, but most of it leaves as water vapour that can be collected.",
   },
   veggie: {
     id: "food.veggie",
@@ -104,8 +104,8 @@ export const food = {
     label: "known",
     sources: ["SRC-R15B-01"],
     credit: "NASA Veggie",
-    young: "🌸 Veggie is a suitcase-sized plant box on the space station that holds about 6 plants under glowing pink lights!",
-    older: "Veggie is a plant box about the size of a carry-on suitcase holding about 6 plants under pink-glowing LEDs. Astronauts grew lettuce, cabbage, mizuna, kale and zinnias."
+    young: "🌱 Veggie is a suitcase-sized plant box on the space station that holds about 6 plants under glowing pink lights!",
+    older: "Veggie is a plant box the size of a carry-on suitcase holding about 6 plants under glowing pink LEDs. Astronauts grew lettuce, cabbage, mizuna, kale and zinnias.",
   },
   chilePeppers: {
     id: "food.chilePeppers",
@@ -113,8 +113,8 @@ export const food = {
     label: "known",
     sources: ["SRC-R15B-07"],
     credit: "NASA Advanced Plant Habitat",
-    young: "🌶️ In 2021 astronauts grew chile peppers in space and made tacos!",
-    older: "In 2021 astronauts grew chile peppers in the Advanced Plant Habitat (a box with more than 180 sensors) and made tacos."
+    young: "🌶️ In 2021 astronauts grew chile peppers in the Advanced Plant Habitat (a box with more than 180 sensors) and made tacos!",
+    older: "In 2021 astronauts grew chile peppers in the Advanced Plant Habitat and made tacos.",
   },
   apollosoilPlants: {
     id: "food.apollosoilPlants",
@@ -122,9 +122,9 @@ export const food = {
     unit: "grams",
     label: "measured",
     sources: ["SRC-R15B-09"],
-    credit: "University of Florida with NASA Apollo samples (2022)",
+    credit: "University of Florida with NASA Apollo samples",
     young: "🌱 In 2022 scientists planted seeds in just 12 grams of real Apollo Moon soil. Almost all sprouted, but they grew slowly!",
-    older: "In 2022 scientists planted seeds in 12 grams of real Apollo Moon soil. Almost all sprouted, but many plants grew slowly and were stressed."
+    older: "In 2022 scientists planted seeds in 12 grams of real Apollo soil. Almost all sprouted, but many plants grew slowly and were stressed.",
   },
   leaf: {
     id: "food.leaf",
@@ -132,7 +132,7 @@ export const food = {
     sources: ["SRC-R15B-08"],
     credit: "NASA LEAF",
     young: "🍃 NASA's LEAF box will grow tiny plants on the Moon to see how Moon gravity and radiation affect them!",
-    older: "LEAF is a NASA plant box planned for a future Artemis landing. It will grow small plants (including duckweed) in a sealed box. Which mission carries it is not confirmed."
+    older: "LEAF is a NASA plant box planned for a future Artemis mission. Which mission carries it is not confirmed.",
   },
   firstMoonSprout: {
     id: "food.firstMoonSprout",
@@ -140,7 +140,7 @@ export const food = {
     label: "known",
     sources: ["SRC-R15B-10"],
     credit: "China's Chang'e 4 (not NASA)",
-    young: "🌱 In 2019 a cotton seed sprouted on the Moon inside China's Chang'e 4 lander, the first ever!",
-    older: "In 2019 a cotton seed sprouted on the Moon inside China's Chang'e 4 lander, the first on the Moon. Reports say it soon died in the freezing night. (China's data, not NASA's; context only.)"
-  }
+    young: "🌱 In 2019 a cotton seed sprouted in a sealed can on China's Chang'e 4 lander, the first ever!",
+    older: "In 2019 a cotton seed sprouted in a sealed can on China's Chang'e 4 lander, the first on the Moon. Reports say it soon died in the freezing night. (China's data, not NASA's; context only.)",
+  },
 } as const satisfies Record<string, Fact>;
