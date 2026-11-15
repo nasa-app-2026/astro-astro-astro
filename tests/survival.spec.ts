@@ -5,6 +5,21 @@ import { regions } from '../src/data/chapter5/regions';
 import { chapter5Facts } from '../src/data/chapter5/facts';
 import { LABEL_WORDS } from '../src/facts/types';
 
+test('Fresh food compares the plant harvest with the crew food use', async ({ page }) => {
+  await enterDirectory(page, '10-12');
+  await page.locator('[data-chapter="survival"]').click();
+  await page.getByRole('button', { name: 'Near the south pole' }).click();
+  await page.getByRole('button', { name: 'Choose Haworth' }).click();
+  await page.getByRole('button', { name: 'Begin Fresh food' }).click();
+  for (let day = 1; day <= 6; day++) {
+    await page.getByRole('button', { name: day <= 3 ? 'Run the grow lamps' : 'Rest', exact: true }).click();
+  }
+  await expect(page.getByText('Challenge complete!')).toBeVisible();
+  await expect(page.getByText(/plants grew 93.6 g/)).toBeVisible();
+  await expect(page.locator('[data-fact-id="food.cropAreaFullDiet"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Back to challenges' }).click();
+});
+
 test('Can you hear us sends science on a contact day', async ({ page }) => {
   await enterDirectory(page, '10-12');
   await page.locator('[data-chapter="survival"]').click();

@@ -18,6 +18,8 @@ import { archiveLabel } from '../../rules/chapter5/storms';
 import { stormArchive } from '../../data/chapter5/storms';
 import { canYouHearUs, contactDays } from '../../data/chapter5/challenges/can-you-hear-us';
 import { advanceContact, contactWarning, startContact, type ContactAction } from '../../rules/chapter5/can-you-hear-us';
+import { freshFood } from '../../data/chapter5/challenges/fresh-food';
+import { advanceFreshFood, startFreshFood, type FoodAction } from '../../rules/chapter5/fresh-food';
 import './survival/site.css';
 
 export class SurvivalScene extends ChapterScene {
@@ -388,6 +390,33 @@ export class SurvivalScene extends ChapterScene {
       };
       render();
     };
+    const showFreshFood = () => {
+      let state = startFreshFood();
+      const render = () => {
+        heading(freshFood.title);
+        const sidebar = document.createElement('div');
+        renderSidebar(sidebar, freshFood.gauges, {
+          food: { value: state.food, capacity: settings.foodStartingSupply + settings.foodDeliveryAmount },
+          energy: { value: state.energy, capacity: settings.foodStartingEnergy },
+          water: { value: state.water, capacity: settings.foodStartingWater },
+        }, state.science, getPlayerProfile().ageRange, settings.crewCount);
+        panel.append(sidebar);
+        if (state.message) paragraph(state.message);
+        if (state.ending) {
+          paragraph(state.ending === 'complete' ? 'Challenge complete!' : state.ending === 'food' ? 'Mission ended early: the crew flew home safely before the food ran out.' : `Mission ended early: the crew flew home safely because ${state.ending} ran low.`);
+          paragraph(`Debrief: the plants grew ${Number((state.freshGrown * 1000).toFixed(1))} g, while the crew used ${state.crewAte} kg of packed food, because the small plant box produces only a little food for the energy it uses.`);
+          if (getPlayerProfile().ageRange === '10-12') panel.append(factElement('food.cropAreaFullDiet'));
+          button('Back to challenges', showChallenges);
+          return;
+        }
+        paragraph(`Day ${state.day} of ${freshFood.lengthDays}. Cargo was expected on day ${settings.foodExpectedDeliveryDay} and will be one day late.`);
+        paragraph(`Grow lamps: ${settings.plantArea} m² × ${chapter5Facts['food.plantPower'].value} kW/m² × ${settings.lampHours} hours = ${freshFood.lampEnergy} kWh. The low estimate is ${chapter5Facts['food.gramsPerKwh'].range[0]} g per kWh.`);
+        const choices: { id: FoodAction; title: string }[] = [{ id: 'lamps', title: 'Run the grow lamps' }, { id: 'rest', title: 'Rest' }];
+        for (const choice of choices) button(choice.title, () => { state = advanceFreshFood(state, choice.id); render(); });
+        panel.append(factElement('food.allFoodFromEarth'), factElement('food.veggie'), factElement('food.leaf'), factElement('food.packedFoodPerDay'), factElement('food.plantPower'), factElement('food.gramsPerKwh'), factElement('food.plantWater'));
+      };
+      render();
+    };
     const showChallenges = () => {
       heading('Choose a training challenge');
       const region = regions.find((entry) => entry.id === this.state.chosenRegion);
@@ -396,6 +425,7 @@ export class SurvivalScene extends ChapterScene {
       button('Begin Into the dark', showIntoTheDark);
       button('Begin Storm alert', showStormPlanning);
       button('Begin Can you hear us?', showContact);
+      button('Begin Fresh food', showFreshFood);
       button('Back to regions', showRegions);
     };
     const showRegions = () => {

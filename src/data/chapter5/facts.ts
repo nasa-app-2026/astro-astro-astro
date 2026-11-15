@@ -38,6 +38,8 @@ export const chapter5Facts = Object.freeze({
   [communication.poleHillsBlock.id]: communication.poleHillsBlock,
   [communication.radioDelay.id]: communication.radioDelay,
   [food.packedFoodPerDay.id]: food.packedFoodPerDay,
+  [food.allFoodFromEarth.id]: food.allFoodFromEarth,
+  [food.gramsPerKwh.id]: food.gramsPerKwh,
   [food.plantPower.id]: food.plantPower,
   [food.plantWater.id]: food.plantWater,
   [food.veggie.id]: food.veggie,

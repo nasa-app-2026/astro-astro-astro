@@ -38,4 +38,15 @@ export const settings = Object.freeze({
   relayBookingCost: 8, // Game rule, made up for fun — kWh
   contactDataPerLab: 1, // Game rule, made up for fun — point
   contactStartingEnergy: 160, // Game rule, made up for fun — kWh for the communication challenge
+  plantArea: 0.5, // Game rule, made up for fun — square metres
+  lampHours: 12, // Game rule, made up for fun — hours per lamp day
+  plantWaterRecovery: 0.9, // Game rule, made up for fun — fraction collected
+  foodStartingSupply: 15, // Game rule, made up for fun — kg
+  foodDeliveryAmount: 10, // Game rule, made up for fun — kg
+  foodExpectedDeliveryDay: 4, // Game rule, made up for fun — expected mission day
+  foodDeliveryDelay: 1, // Game rule, made up for fun — day
+  foodStartingEnergy: 200, // Game rule, made up for fun — kWh
+  foodStartingWater: 5, // Game rule, made up for fun — litres
+  experimentLampDays: 3, // Game rule, made up for fun — lamp days
+  experimentScience: 3, // Game rule, made up for fun — points
 });

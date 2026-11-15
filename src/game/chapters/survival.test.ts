@@ -20,6 +20,35 @@ import { dailyDose, scheduleAlerts, stormImpact } from '../../rules/chapter5/sto
 import { advanceStormAlert, prediction, startStormAlert, type Plan } from '../../rules/chapter5/storm-alert';
 import { contactDays } from '../../data/chapter5/challenges/can-you-hear-us';
 import { advanceContact, contactWarning, startContact } from '../../rules/chapter5/can-you-hear-us';
+import { freshFood } from '../../data/chapter5/challenges/fresh-food';
+import { advanceFreshFood, startFreshFood } from '../../rules/chapter5/fresh-food';
+
+describe('Fresh food', () => {
+  it('calculates food, lamp energy, plant yield and recovered water from facts', () => {
+    const state = advanceFreshFood(startFreshFood(), 'lamps');
+    expect(freshFood.dailyFood).toBe(3.6);
+    expect(freshFood.lampEnergy).toBeCloseTo(15.6);
+    expect(state.freshGrown).toBeCloseTo(0.0312);
+    expect(state.food).toBeCloseTo(11.4312);
+    expect(state.energy).toBeCloseTo(206.4);
+    expect(state.water).toBeCloseTo(4.8);
+  });
+  it('delays the cargo and completes the experiment after three lamp days', () => {
+    let state = startFreshFood();
+    for (let day = 1; day <= 6; day++) {
+      state = advanceFreshFood(state, day <= 3 ? 'lamps' : 'rest');
+      if (day === 4) expect(state.message).not.toContain('cargo arrived');
+      if (day === 5) expect(state.message).toContain('cargo arrived');
+    }
+    expect(state).toMatchObject({ ending: 'complete', science: 3, lampDays: 3 });
+    expect(state.freshGrown).toBeLessThan(state.crewAte);
+  });
+  it('ends safely when plants cannot cover the crew food use', () => {
+    const state = advanceFreshFood({ ...startFreshFood(), food: 0 }, 'lamps');
+    expect(state.ending).toBe('food');
+    expect(state.freshGrown).toBeLessThan(freshFood.dailyFood);
+  });
+});
 
 describe('Can you hear us?', () => {
   it('uses the requested example contact counts per region', () => {
