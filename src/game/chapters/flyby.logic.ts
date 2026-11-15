@@ -31,6 +31,9 @@ export type FlybyState = {
   battery: number;
   science: FlybyScience[];
   doseMsv: number;
+  orbitProgress: number;
+  orbitAngle: number | null;
+  orbitDirection: number;
   path: FlightPoint[];
   message: string;
 };
@@ -72,6 +75,9 @@ export const initialFlybyState: FlybyState = {
   battery: DEFAULT_FLIGHT_PLAN.energyStore,
   science: [],
   doseMsv: 0,
+  orbitProgress: 0,
+  orbitAngle: null,
+  orbitDirection: 0,
   path: [],
   message: 'Mission Control is ready. Plan your fuel and power, then fly the uncrewed survey rocket with the arrow keys.',
 };
@@ -164,7 +170,25 @@ export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeco
     fuel: Math.max(0, state.fuel - dt * thrust * fuelScale * 1.1),
     battery: Math.max(0, state.battery - dt * thrust * 0.5),
   };
-  const eligible = flightState.science.length === 4;
+  const moonRadius = moonDistance(flightState);
+  let orbitProgress = state.orbitProgress;
+  let orbitAngle = state.orbitAngle;
+  let orbitDirection = state.orbitDirection;
+  if (moonRadius >= 85 && moonRadius <= 230) {
+    const angle = Math.atan2(flightState.y - FLIGHT_WORLD.moon.y, flightState.x - FLIGHT_WORLD.moon.x);
+    if (orbitAngle !== null) {
+      const delta = Math.atan2(Math.sin(angle - orbitAngle), Math.cos(angle - orbitAngle));
+      if (orbitDirection === 0 && Math.abs(delta) > 0.002) orbitDirection = Math.sign(delta);
+      if (Math.sign(delta) === orbitDirection) orbitProgress = Math.min(Math.PI * 2, orbitProgress + Math.abs(delta));
+    }
+    orbitAngle = angle;
+  } else if (orbitProgress < Math.PI * 2) {
+    orbitProgress = 0;
+    orbitAngle = null;
+    orbitDirection = 0;
+  }
+  Object.assign(flightState, { orbitProgress, orbitAngle, orbitDirection });
+  const eligible = flightState.science.length === 4 && orbitProgress >= Math.PI * 2;
   const returnedToEarth = flightState.phase === 'returning'
     && distance(flightState, FLIGHT_WORLD.earth) < 55
     && Math.hypot(vx, vy) < 22;
@@ -184,8 +208,10 @@ export function stepFlyby(state: FlybyState, controls: FlightControls, deltaSeco
       ? asteroid ? 'Asteroid collision! Use the first-person camera and small thruster corrections to avoid space rocks.' : 'The spacecraft hit the Moon. Restart the flight and try a wider approach.'
       : returnedToEarth
         ? 'Safe landing! The spacecraft is home with all four science records.'
-        : eligible
-          ? 'All science jobs are done. Fly back toward Earth and slow down for a safe landing.'
+        : flightState.science.length === 4 && !eligible
+          ? 'Science complete. Follow the gold orbit guide around the Moon once before returning.'
+          : eligible
+          ? 'Moon orbit complete. Fly back toward Earth and slow down for a safe landing.'
           : state.message,
   };
 }
@@ -215,7 +241,9 @@ export function collectFlybyScience(state: FlybyState, science: FlybyScience): F
     message: result[science],
   };
   return scienceList.length === 4
-    ? { ...updated, phase: 'returning', message: 'All science jobs are done. Fly back to Earth for landing.' }
+    ? state.orbitProgress >= Math.PI * 2
+      ? { ...updated, phase: 'returning', message: 'Science complete. Fly back toward Earth for landing.' }
+      : { ...updated, message: 'Science complete. Follow the gold orbit guide around the Moon once before returning.' }
     : updated;
 }
 

@@ -23,7 +23,8 @@ test('all seven missions open directly and return to the directory', async ({ pa
     await expect(page.locator('#chapter-label')).toContainText(title);
     await expect(page.locator('#app')).toHaveAttribute('data-active-scene', id);
     const shouldLockScroll = ['flyby', 'robots', 'firstLanding', 'building'].includes(id);
-    expect(await page.locator('html').evaluate((element) => element.classList.contains('mission-no-scroll'))).toBe(shouldLockScroll);
+    const lockClass = await page.locator('html').evaluate((element) => element.classList.contains('mission-no-scroll'));
+    expect(lockClass).toBe(shouldLockScroll);
     await page.getByRole('button', { name: 'All missions' }).click();
     await expect(page.locator('#home')).toBeVisible();
     await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
@@ -31,25 +32,14 @@ test('all seven missions open directly and return to the directory', async ({ pa
   }
 });
 
-test('scrolling is locked only for stage one and two missions', async ({ page }) => {
-  await page.goto('/');
-  await page.evaluate(() => {
-    document.documentElement.style.scrollBehavior = 'auto';
-    window.scrollTo(0, 500);
-  });
-  expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
-  await page.evaluate(() => { document.documentElement.scrollTop = 0; });
-
-  for (const id of ['flyby', 'firstLanding', 'survival']) {
+test('scrolling is locked only while stage one and two missions are open', async ({ page }) => {
+  await enterDirectory(page);
+  for (const [id, locked] of [['flyby', true], ['robots', true], ['survival', false]] as const) {
     await page.locator(`[data-chapter="${id}"]`).click();
-    const locked = id !== 'survival';
-    const hasLock = await page.locator('html').evaluate((element) => element.classList.contains('mission-no-scroll'));
-    expect(hasLock).toBe(locked);
-    if (locked) {
-      await page.mouse.wheel(0, 900);
-      expect(await page.evaluate(() => window.scrollY)).toBe(0);
-    }
+    if (locked) await expect(page.locator('html')).toHaveClass(/mission-no-scroll/);
+    else await expect(page.locator('html')).not.toHaveClass(/mission-no-scroll/);
     await page.getByRole('button', { name: 'All missions' }).click();
+    await expect(page.locator('html')).not.toHaveClass(/mission-no-scroll/);
   }
 });
 

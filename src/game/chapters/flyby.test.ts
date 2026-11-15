@@ -41,12 +41,13 @@ describe('piloted Moon flyby mission', () => {
     expect(Math.hypot(coasting.vx, coasting.vy)).toBeLessThan(12);
   });
 
-  it('starts the return flight as soon as all readings are collected', () => {
+  it('returns only after a complete lunar orbit and all four readings', () => {
     let state: typeof initialFlybyState = {
       ...launchFlyby(initialFlybyState),
       phase: 'cruise',
       x: FLIGHT_WORLD.moon.x + 120,
       y: FLIGHT_WORLD.moon.y,
+      orbitProgress: Math.PI * 2,
     };
 
     for (const science of Object.values(FLYBY_SCIENCE)) {
@@ -65,6 +66,19 @@ describe('piloted Moon flyby mission', () => {
     state = stepFlyby(state, idle, 0.016);
     expect(state.phase).toBe('complete');
     expect(state.message).toContain('Safe landing');
+  });
+
+  it('requires a complete orbit before the science readings can start the return phase', () => {
+    let state: typeof initialFlybyState = {
+      ...launchFlyby(initialFlybyState),
+      phase: 'cruise',
+      x: FLIGHT_WORLD.moon.x + 120,
+      y: FLIGHT_WORLD.moon.y,
+    };
+    for (const science of Object.values(FLYBY_SCIENCE)) state = collectFlybyScience(state, science);
+    expect(state.science).toHaveLength(4);
+    expect(state.phase).toBe('cruise');
+    expect(state.message).toContain('orbit guide around the Moon once');
   });
 
   it('blocks instrument readings until the spacecraft reaches the required location', () => {

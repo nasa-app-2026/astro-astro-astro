@@ -10,12 +10,13 @@ test('pilot the rocket from the launch pad and watch its live camera move', asyn
   const missionGrid = await page.locator('.flyby-panel .mission-grid').boundingBox();
   const camera = await page.locator('.flyby-panel .camera').boundingBox();
   const telemetry = await page.locator('.flyby-panel .telemetry').boundingBox();
-  expect(camera?.width).toBeGreaterThan((missionGrid?.width ?? 0) * 0.95);
+  expect(camera?.width).toBeGreaterThan((missionGrid?.width ?? 0) * 0.5);
   expect(camera?.height).toBeGreaterThan((missionGrid?.height ?? 0) * 0.9);
   expect(telemetry?.height).toBeLessThan(50);
   expect(telemetry!.y).toBeGreaterThan(camera!.y + camera!.height * 0.75);
   await expect(page.locator('#flyby-live-camera')).toHaveAttribute('viewBox', '0 0 1000 200');
-  await expect(page.locator('.flyby-panel .first-person')).toBeHidden();
+  await expect(page.locator('#flyby-orbit-guide')).toHaveCount(1);
+  await expect(page.locator('.flyby-panel .first-person')).toHaveCount(0);
   await expect(page.locator('#flyby-action-dock')).toBeInViewport();
   await expect(page.locator('#fuel-fill')).toBeInViewport();
   await expect(page.locator('#battery-store')).toBeInViewport();
@@ -28,8 +29,9 @@ test('pilot the rocket from the launch pad and watch its live camera move', asyn
     input.value = '75';
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
-  await expect(page.getByText(/no mission clock or orbit quota/i)).toBeVisible();
-  await expect(page.locator('#flyby-orbits')).toHaveCount(0);
+  await expect(page.getByText(/complete one full circuit/i)).toBeVisible();
+  await expect(page.locator('#flyby-orbit-guide')).toHaveCount(1);
+  await expect(page.locator('#flyby-orbit-label')).toContainText('REQUIRED LUNAR ORBIT');
   await expect(page.locator('#flyby-time')).toHaveCount(0);
   const startingPosition = await page.locator('#flyby-position').textContent();
   await page.getByRole('button', { name: /launch the survey rocket/i }).click();

@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { enterDirectory } from './helpers/onboarding';
 
 test('Expansion keeps its supply-and-build mission playable and returns to the directory', async ({ page }) => {
-  await page.goto('/');
+  await enterDirectory(page);
   await page.locator('[data-chapter="expansion"]').click();
 
   const canvas = page.locator('#game-container canvas');
@@ -59,7 +60,7 @@ test('Expansion keeps its supply-and-build mission playable and returns to the d
 });
 
 test('Expansion briefing can be started with the keyboard', async ({ page }) => {
-  await page.goto('/');
+  await enterDirectory(page);
   await page.locator('[data-chapter="expansion"]').click();
 
   const canvas = page.locator('#game-container canvas');
