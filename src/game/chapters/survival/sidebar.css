@@ -1,0 +1,12 @@
+.survival-sidebar{box-sizing:border-box;width:min(100%,320px);padding:18px;background:#102840;color:#eef7ff;border:1px solid #56849a;border-radius:14px;font-family:Arial,sans-serif}
+.survival-sidebar h3{margin:0 0 12px;font-size:20px}
+.survival-sidebar p{margin:8px 0 0;font-size:16px;line-height:1.4}
+.survival-gauge{padding:20px 0;border-bottom:1px solid #56849a}
+.survival-gauge.main progress{height:24px}
+.survival-gauge.extra{padding:12px 0}
+.survival-gauge.extra h3{font-size:16px}
+.survival-gauge.extra p{font-size:14px}
+.survival-gauge.extra progress{height:12px}
+.survival-sidebar progress{display:block;width:100%;accent-color:#9efaf0}
+.survival-science-goal{padding-top:22px}
+.survival-science-goal progress{height:16px;accent-color:#f7d57a}

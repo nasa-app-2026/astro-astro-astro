@@ -1,0 +1,39 @@
+.survival-panel{position:fixed;inset:56px 0 0;overflow:auto;pointer-events:auto;background:#081427;color:#eef7ff;padding:clamp(20px,5vw,64px);font-family:Arial,sans-serif}
+.survival-panel h1{font-size:clamp(28px,4vw,44px);margin:0 0 20px;max-width:850px}
+.survival-panel p{max-width:850px;font-size:18px;line-height:1.6}
+.survival-panel button{display:block;width:min(100%,500px);margin:16px 0;padding:20px;text-align:left;border:2px solid #56849a;border-radius:12px;background:#102840;color:#eef7ff;font-size:20px;cursor:pointer}
+.survival-panel button:hover{background:#1d4c5d}
+.survival-panel button[data-recommended=true]{border-color:#9efaf0;background:#1d4c5d;box-shadow:0 0 0 3px #9efaf033}
+.survival-panel ul{padding:0;list-style:none;max-width:850px}
+.survival-panel li{margin:16px 0;padding:16px 20px;border:1px solid #3a6480;border-radius:12px;background:#102840}
+.survival-panel li p{margin:0 0 10px}
+.survival-panel small{color:#b8cbd9;overflow-wrap:anywhere}
+.survival-region-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:20px;margin:28px 0}
+.survival-region-card{min-width:0;padding:22px;border:1px solid #56849a;border-radius:16px;background:#102840;display:flex;flex-direction:column}
+.survival-region-card h2{margin:0 0 18px;font-size:26px}
+.survival-picture-placeholder{display:grid;place-items:center;min-height:140px;border:1px dashed #56849a;border-radius:10px;background:#0b1b2d;color:#b8cbd9;margin-bottom:20px}
+.survival-region-fact{margin-bottom:18px}
+.survival-region-fact p{margin:8px 0;font-size:16px}
+.survival-region-card h3{font-size:18px;color:#9efaf0}
+.survival-region-card .survival-region-note{font-size:15px;border-left:3px solid #9efaf0;padding-left:12px}
+.survival-region-card button{margin-top:auto;width:100%}
+.survival-region-card button[aria-pressed=true]{border-color:#9efaf0;background:#1d4c5d}
+.survival-light-note{display:block;max-width:850px}
+.survival-challenge-layout{display:grid;grid-template-columns:minmax(230px,300px) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:start}
+.survival-challenge-main{min-width:0}
+.survival-challenge-main h2{font-size:26px;margin:18px 0 10px}
+.survival-challenge-main ul{max-width:none;padding-left:26px;list-style:disc}
+.survival-challenge-main li{background:transparent;border:0;padding:4px;margin:4px 0}
+.survival-light-timeline{display:flex;flex-wrap:wrap;gap:8px;padding:0;list-style:none}
+.survival-light-timeline li{padding:8px 10px;border:1px solid #56849a;border-radius:8px;background:#102840}
+.survival-light-timeline li[aria-current=step]{border-color:#9efaf0}
+.survival-challenge-main label{display:block;margin:20px 0;font-size:18px}
+.survival-challenge-main select{display:block;margin-top:8px;padding:10px;background:#102840;color:#eef7ff;border:1px solid #9efaf0;border-radius:8px;font-size:18px}
+.survival-challenge-sources{border-top:1px solid #3a6480;margin-top:32px;padding-top:20px}
+.survival-challenge-sources .survival-region-fact{display:inline-block;vertical-align:top;max-width:240px;margin-right:24px}
+.survival-challenge-sources .survival-region-fact p{font-size:14px}
+@media(max-width:700px){.survival-challenge-layout{grid-template-columns:1fr}}
+.survival-panel .survival-log-button{position:fixed;right:20px;bottom:20px;width:auto;z-index:2;margin:0;padding:12px 18px}
+.survival-log{position:fixed;right:20px;bottom:85px;z-index:2;max-height:50vh;overflow:auto;width:min(460px,calc(100vw - 40px));padding:18px;background:#102840;border:2px solid #9efaf0;border-radius:12px}
+.survival-log[hidden]{display:none}
+.survival-day-cards{display:flex;gap:10px;overflow-x:auto}.survival-panel .survival-day-cards button{flex:0 0 200px;font-size:15px;padding:12px}
