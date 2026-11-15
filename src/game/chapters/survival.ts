@@ -10,6 +10,7 @@ import { intoTheDark } from '../../data/chapter5/challenges/into-the-dark';
 import { advanceIntoTheDark, isDark, replayToMorning, startIntoTheDark } from '../../rules/chapter5/into-the-dark';
 import { renderSidebar } from './survival/sidebar';
 import type { DecisionLogEntry } from '../../rules/chapter5/log';
+import { findTurningPoint } from '../../rules/chapter5/turning-point';
 import './survival/site.css';
 
 export class SurvivalScene extends ChapterScene {
@@ -117,6 +118,47 @@ export class SurvivalScene extends ChapterScene {
                 : 'Challenge complete!');
             if (result.endingBecause) addText('p', result.endingBecause);
             addText('p', `Science reached: ${challengeState.science} of ${intoTheDark.scienceGoal} points.`);
+            addText('h2', 'Challenge debrief');
+            const turning = findTurningPoint(challengeState.history);
+            if (turning) {
+              const changedOxygen = turning.original.oxygenKg !== turning.alternative.oxygenKg;
+              const description = changedOxygen
+                ? `make ${turning.alternative.oxygenKg} kg of oxygen instead of ${turning.original.oxygenKg} kg`
+                : `choose ${intoTheDark.actions.find(action => action.id === turning.alternative.action)?.title} instead of ${intoTheDark.actions.find(action => action.id === turning.original.action)?.title}`;
+              addText('p', `★ Your turning point: Day ${turning.day}. Try ${description}. In this replay, the crew ${turning.result.ending === 'complete' ? 'completed the challenge' : `reached the end of day ${turning.result.day - 1}`} with ${turning.result.science} science points.`);
+              const tryTurning = document.createElement('button');
+              tryTurning.type = 'button';
+              tryTurning.textContent = `Try this idea from day ${turning.day}`;
+              tryTurning.addEventListener('click', () => { challengeState = replayToMorning(challengeState.history, turning.day); chapterLog = [...previousLog, ...challengeState.log]; render(); });
+              content.append(tryTurning);
+            } else addText('p', '★ You did well! No single change improved this replay.');
+            if (getPlayerProfile().ageRange === '10-12') {
+              const cards = document.createElement('div');
+              cards.className = 'survival-day-cards';
+              const detail = document.createElement('section');
+              detail.setAttribute('aria-label', 'Day details');
+              for (const entry of challengeState.log) {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.textContent = `Day ${entry.day} · ${entry.changes.map(change => `${change.gauge}: ${Number((change.after - change.before).toFixed(1))}`).join(' · ')}`;
+                card.addEventListener('click', () => {
+                  detail.replaceChildren();
+                  const answers = [
+                    ['What did I do?', `${entry.actionName}; made ${entry.decision.oxygenKg} kg oxygen.`],
+                    ['What did it cost?', `${entry.actionEnergy + entry.oxygenEnergy} kWh for your choices.`],
+                    ['What happened later?', entry.links.length ? entry.links.map(link => `Energy was low on day ${link.day}.`).join(' ') : 'No later low-energy link was recorded for this day.'],
+                    ['What could I try?', turning?.day === entry.day ? `Try ${turning.alternative.oxygenKg} kg oxygen and ${turning.alternative.action}.` : 'Try another oxygen amount or action and compare the result.'],
+                  ];
+                  for (const [question, answer] of answers) {
+                    const title = document.createElement('h3'); title.textContent = question;
+                    const text = document.createElement('p'); text.textContent = answer;
+                    detail.append(title, text);
+                  }
+                });
+                cards.append(card);
+              }
+              content.append(cards, detail);
+            }
             if (result.ending !== 'complete') {
               const retry = document.createElement('button');
               retry.type = 'button';

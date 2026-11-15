@@ -14,6 +14,17 @@ import type { ResourceId } from '../../data/chapter5/gauges';
 import { intoTheDark } from '../../data/chapter5/challenges/into-the-dark';
 import { advanceIntoTheDark, isDark, replayToMorning, startIntoTheDark } from '../../rules/chapter5/into-the-dark';
 import { linkEnergyProblem } from '../../rules/chapter5/log';
+import { findTurningPoint } from '../../rules/chapter5/turning-point';
+
+it('finds a single oxygen change that helps a fixed no-oxygen challenge', () => {
+  let state = startIntoTheDark();
+  while (!state.ending) state = advanceIntoTheDark(state, { oxygenKg: 0, action: 'rest' });
+  const turning = findTurningPoint(state.history);
+  expect(turning).not.toBeNull();
+  expect(turning!.day).toBe(1);
+  expect(turning!.alternative).toEqual({ oxygenKg: 1, action: 'rest' });
+  expect(turning!.result.air).toBeGreaterThan(0);
+});
 
 it('records decisions and links the largest earlier energy costs to a later low-energy day', () => {
   let state = startIntoTheDark();

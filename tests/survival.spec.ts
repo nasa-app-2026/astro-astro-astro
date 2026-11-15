@@ -77,6 +77,15 @@ for (const age of ['7-9', '10-12'] as const) {
       if (day < 6) await page.getByRole('button', { name: `Continue to day ${day + 1}` }).click();
     }
     await expect(page.getByRole('heading', { name: 'Challenge complete!' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Challenge debrief' })).toBeVisible();
+    await expect(page.getByText(/★/)).toBeVisible();
+    const cards = page.locator('.survival-day-cards button');
+    if (age === '10-12') {
+      await expect(cards).toHaveCount(6);
+      await cards.first().click();
+      await expect(page.getByRole('heading', { name: 'What did I do?' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'What could I try?' })).toBeVisible();
+    } else await expect(cards).toHaveCount(0);
     await expect(page.getByText('Science reached: 5 of 5 points.')).toBeVisible();
     await page.getByRole('button', { name: 'Back to challenges' }).click();
     await expect(page.getByRole('heading', { name: 'Choose a training challenge' })).toBeVisible();
