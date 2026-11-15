@@ -1,8 +1,10 @@
 import { ChapterScene } from './ChapterScene';
 import { chapters } from './catalog';
+import { isExpansionGameplayActive, type ExpansionPhase } from './expansion/mission';
+import { getExpansionResourceState } from './expansion/visuals';
 
 type BuildingKind = 'greenhouse' | 'solar' | 'relay' | 'shelter' | 'garage' | 'recycler';
-type Phase = 'collect' | 'build' | 'complete' | 'failed';
+type Phase = ExpansionPhase;
 
 interface Point {
     x: number;
@@ -102,7 +104,7 @@ export class ExpansionScene extends ChapterScene {
         { x: 8, y: 5, collected: false }
     ];
     private readonly structures: Structure[] = [{ x: 4, y: 3, kind: 'outpost' }];
-    private phase: Phase = 'collect';
+    private phase: Phase = 'intro';
     private selectedBuilding?: BuildingKind;
     private message = 'Find the three supply crates. Watch your suit while you explore.';
     private energy = 82;
@@ -122,6 +124,8 @@ export class ExpansionScene extends ChapterScene {
     private keys!: Record<'up' | 'down' | 'left' | 'right', Phaser.Input.Keyboard.Key>;
     private repairKey!: Phaser.Input.Keyboard.Key;
     private serviceKey!: Phaser.Input.Keyboard.Key;
+    private startEnterKey!: Phaser.Input.Keyboard.Key;
+    private startSpaceKey!: Phaser.Input.Keyboard.Key;
     private astronautSprite!: Phaser.GameObjects.Container;
     private astronautArmLeft!: Phaser.GameObjects.Rectangle;
     private astronautArmRight!: Phaser.GameObjects.Rectangle;
@@ -131,6 +135,7 @@ export class ExpansionScene extends ChapterScene {
     private mapLayer!: Phaser.GameObjects.Container;
     private powerNetwork!: Phaser.GameObjects.Graphics;
     private hudLayer!: Phaser.GameObjects.Container;
+    private briefingLayer!: Phaser.GameObjects.Container;
     private resourceBars!: Phaser.GameObjects.Graphics;
     private resourceText: Phaser.GameObjects.Text[] = [];
     private lastResourceLabels: string[] = [];
@@ -153,7 +158,7 @@ export class ExpansionScene extends ChapterScene {
         });
         this.structures.splice(1);
         this.structures[0] = { x: 4, y: 3, kind: 'outpost' };
-        this.phase = 'collect';
+        this.phase = 'intro';
         this.selectedBuilding = undefined;
         this.message = 'Find the three supply crates. Watch your suit while you explore.';
         this.energy = 82;
@@ -193,6 +198,8 @@ export class ExpansionScene extends ChapterScene {
         };
         this.repairKey = this.input.keyboard.addKey(82);
         this.serviceKey = this.input.keyboard.addKey(69);
+        this.startEnterKey = this.input.keyboard.addKey('ENTER');
+        this.startSpaceKey = this.input.keyboard.addKey('SPACE');
         this.mapLayer = this.add.container(0, 0).setDepth(5);
 
         this.drawScene();
@@ -200,15 +207,27 @@ export class ExpansionScene extends ChapterScene {
         this.hudLayer = this.add.container(0, 0).setDepth(100);
         this.refreshHud();
         this.updateResourceBars(1);
+        this.drawMissionBriefing();
 
         this.input.on('pointerdown', this.handlePointerDown, this);
         this.events.once('shutdown', () => {
             this.input.off('pointerdown', this.handlePointerDown, this);
+            delete this.game.canvas.dataset.expansionPhase;
+            delete this.game.canvas.dataset.expansionSupplies;
+            delete this.game.canvas.dataset.expansionBuilds;
         });
     }
 
     update(_time: number, delta: number) {
-        if (this.phase === 'complete' || this.phase === 'failed') {
+        if (this.phase === 'intro') {
+            if (this.startEnterKey.isDown || this.startSpaceKey.isDown) {
+                this.beginMission();
+            }
+            this.animateStars(delta);
+            return;
+        }
+
+        if (!isExpansionGameplayActive(this.phase)) {
             this.animateStars(delta);
             return;
         }
@@ -366,6 +385,10 @@ export class ExpansionScene extends ChapterScene {
     }
 
     private handlePointerDown(pointer: Phaser.Input.Pointer) {
+        if (this.phase === 'intro') {
+            return;
+        }
+
         if (this.phase === 'complete' || this.phase === 'failed') {
             if (pointer.x >= 417 && pointer.x <= 607 && pointer.y >= 434 && pointer.y <= 478) {
                 this.scene.restart();
@@ -523,10 +546,250 @@ export class ExpansionScene extends ChapterScene {
         this.drawEndOverlay(false);
     }
 
+    private beginMission() {
+        if (this.phase !== 'intro') {
+            return;
+        }
+        this.phase = 'collect';
+        this.message = 'Find the three supply crates. Watch your suit while you explore.';
+        this.briefingLayer.setVisible(false);
+        this.refreshHud();
+    }
+
+    private drawMissionBriefing() {
+        this.briefingLayer = this.add.container(0, 0).setDepth(110);
+        this.briefingLayer.add(this.add.rectangle(512, 320, 1024, 640, 0x050b13, 0.82));
+
+        const panel = this.add.graphics();
+        panel.fillStyle(0x07121e, 0.94);
+        panel.fillRoundedRect(192, 106, 640, 428, 16);
+        panel.fillStyle(0x13263a, 0.98);
+        panel.fillRoundedRect(200, 98, 624, 428, 14);
+        panel.lineStyle(1.5, 0x57738b, 0.9);
+        panel.strokeRoundedRect(200, 98, 624, 428, 14);
+        panel.fillStyle(0x74dfc3, 0.95);
+        panel.fillRoundedRect(224, 98, 82, 3, 2);
+        panel.fillStyle(0x244158, 0.92);
+        panel.fillRoundedRect(220, 111, 584, 1, 1);
+        this.briefingLayer.add(panel);
+
+        const signal = this.add.circle(244, 136, 4, 0x7be6c5);
+        this.briefingLayer.add(signal);
+        this.tweens.add({
+            targets: signal,
+            alpha: { from: 0.5, to: 1 },
+            scale: { from: 0.85, to: 1.35 },
+            duration: 850,
+            yoyo: true,
+            repeat: -1
+        });
+        this.briefingLayer.add(this.add.text(256, 127, 'MISSION CONTROL  /  INCOMING TRANSMISSION', {
+            fontFamily: 'Arial',
+            fontSize: '10px',
+            color: '#91b5c9',
+            fontStyle: 'bold',
+            letterSpacing: 1
+        }));
+        this.briefingLayer.add(this.add.text(232, 153, 'Engineer, you’re on duty.', {
+            fontFamily: 'Arial',
+            fontSize: '27px',
+            color: '#f5f8fc',
+            fontStyle: 'bold'
+        }));
+        this.briefingLayer.add(this.add.text(
+            234,
+            194,
+            'You’re the astronaut engineer helping grow our south-pole Moon outpost. Three supply kits are waiting out there. Bring them back, then build three upgrades the crew needs.',
+            {
+                fontFamily: 'Arial',
+                fontSize: '14px',
+                color: '#c4d2e3',
+                wordWrap: { width: 430 },
+                lineSpacing: 4
+            }
+        ));
+        this.drawBriefingAstronaut();
+
+        const jobCard = this.add.graphics();
+        jobCard.fillStyle(0x0d1b29, 0.92);
+        jobCard.fillRoundedRect(224, 269, 270, 142, 8);
+        jobCard.lineStyle(1, 0x344c61, 0.9);
+        jobCard.strokeRoundedRect(224, 269, 270, 142, 8);
+        jobCard.fillStyle(0x70d7bd, 0.9);
+        jobCard.fillRoundedRect(224, 269, 3, 142, 2);
+        this.briefingLayer.add(jobCard);
+        this.briefingLayer.add(this.add.text(240, 282, 'YOUR ASSIGNMENT', {
+            fontFamily: 'Arial',
+            fontSize: '10px',
+            color: '#7de0c6',
+            fontStyle: 'bold',
+            letterSpacing: 1
+        }));
+        this.briefingLayer.add(this.add.text(242, 307, '01   Collect 3 supply kits', {
+            fontFamily: 'Arial',
+            fontSize: '13px',
+            color: '#edf4fa',
+            fontStyle: 'bold'
+        }));
+        this.briefingLayer.add(this.add.text(242, 336, '02   Return safely to the base', {
+            fontFamily: 'Arial',
+            fontSize: '13px',
+            color: '#edf4fa',
+            fontStyle: 'bold'
+        }));
+        this.briefingLayer.add(this.add.text(242, 365, '03   Choose and build 3 upgrades', {
+            fontFamily: 'Arial',
+            fontSize: '13px',
+            color: '#edf4fa',
+            fontStyle: 'bold'
+        }));
+        this.briefingLayer.add(this.add.text(242, 390, 'Oxygen and suit shield matter out there.', {
+            fontFamily: 'Arial',
+            fontSize: '10px',
+            color: '#9eb3c7'
+        }));
+
+        const controlsCard = this.add.graphics();
+        controlsCard.fillStyle(0x0d1b29, 0.92);
+        controlsCard.fillRoundedRect(506, 269, 298, 142, 8);
+        controlsCard.lineStyle(1, 0x344c61, 0.9);
+        controlsCard.strokeRoundedRect(506, 269, 298, 142, 8);
+        controlsCard.fillStyle(0xf0c766, 0.9);
+        controlsCard.fillRoundedRect(506, 269, 3, 142, 2);
+        this.briefingLayer.add(controlsCard);
+        this.briefingLayer.add(this.add.text(522, 282, 'SUIT CONTROLS', {
+            fontFamily: 'Arial',
+            fontSize: '10px',
+            color: '#f0d17d',
+            fontStyle: 'bold',
+            letterSpacing: 1
+        }));
+        this.briefingLayer.add(this.add.text(524, 307, 'WASD / ARROWS', {
+            fontFamily: 'Arial',
+            fontSize: '11px',
+            color: '#ffffff',
+            fontStyle: 'bold'
+        }));
+        this.briefingLayer.add(this.add.text(676, 307, 'Move around', {
+            fontFamily: 'Arial',
+            fontSize: '11px',
+            color: '#bbcada'
+        }));
+        this.briefingLayer.add(this.add.text(524, 338, 'R', {
+            fontFamily: 'Arial',
+            fontSize: '12px',
+            color: '#83dced',
+            fontStyle: 'bold'
+        }));
+        this.briefingLayer.add(this.add.text(553, 338, 'Patch your suit', {
+            fontFamily: 'Arial',
+            fontSize: '11px',
+            color: '#bbcada'
+        }));
+        this.briefingLayer.add(this.add.text(524, 367, 'E', {
+            fontFamily: 'Arial',
+            fontSize: '12px',
+            color: '#f0d17d',
+            fontStyle: 'bold'
+        }));
+        this.briefingLayer.add(this.add.text(553, 367, 'Refill near a building', {
+            fontFamily: 'Arial',
+            fontSize: '11px',
+            color: '#bbcada'
+        }));
+        this.briefingLayer.add(this.add.text(522, 390, 'Keep an eye on your oxygen and shield.', {
+            fontFamily: 'Arial',
+            fontSize: '10px',
+            color: '#9eb3c7'
+        }));
+
+        const startButton = this.add.rectangle(512, 467, 270, 42, 0x206b63)
+            .setStrokeStyle(1.5, 0x77ddc0)
+            .setInteractive({ useHandCursor: true });
+        this.briefingLayer.add(startButton);
+        const buttonGlow = this.add.rectangle(512, 467, 270, 42, 0x72e0c3, 0.06);
+        this.briefingLayer.add(buttonGlow);
+        this.tweens.add({
+            targets: buttonGlow,
+            alpha: { from: 0.04, to: 0.2 },
+            duration: 900,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+        this.briefingLayer.add(this.add.text(512, 467, 'BEGIN FIELD MISSION     →', {
+            fontFamily: 'Arial',
+            fontSize: '14px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            letterSpacing: 1
+        }).setOrigin(0.5));
+        startButton.on('pointerdown', () => this.beginMission());
+        this.briefingLayer.add(this.add.text(512, 501, 'Press ENTER or SPACE to begin', {
+            fontFamily: 'Arial',
+            fontSize: '9px',
+            color: '#8fa6bb'
+        }).setOrigin(0.5));
+    }
+
+    private drawBriefingAstronaut() {
+        const portrait = this.add.container(746, 220);
+        const glow = this.add.circle(0, 0, 48, 0x55d7d1, 0.035)
+            .setStrokeStyle(1, 0x72d9c2, 0.18);
+        portrait.add(glow);
+        portrait.add(this.add.circle(0, 0, 39, 0x0b1a28, 0.95)
+            .setStrokeStyle(1.5, 0x5c8798, 0.8));
+        portrait.add(this.add.circle(0, 0, 34, 0x173248, 0.7)
+            .setStrokeStyle(1, 0x78dfd0, 0.45));
+        portrait.add(this.add.ellipse(-24, 6, 10, 25, 0x708ba0)
+            .setStrokeStyle(1, 0xb9cbd9, 0.8));
+        portrait.add(this.add.ellipse(0, 17, 37, 27, 0xd8e3eb)
+            .setStrokeStyle(1, 0xf2f7fb, 0.9));
+        portrait.add(this.add.rectangle(0, 8, 23, 8, 0x49b8a5));
+        portrait.add(this.add.rectangle(0, 22, 16, 16, 0x294157)
+            .setStrokeStyle(1, 0x7d9bb2, 0.85));
+        portrait.add(this.add.rectangle(0, 17, 10, 2, 0x79d6d1));
+        portrait.add(this.add.circle(-3, 24, 1.5, 0xf6d36e));
+        portrait.add(this.add.circle(3, 24, 1.5, 0x77ddc0));
+        portrait.add(this.add.circle(0, -13, 23, 0xe7eef4)
+            .setStrokeStyle(1.5, 0xffffff, 0.95));
+        portrait.add(this.add.ellipse(5, -14, 17, 19, 0x1d526f)
+            .setStrokeStyle(1, 0x7ce0ed, 0.86));
+        portrait.add(this.add.ellipse(8, -20, 7, 3, 0xd7f8ff, 0.95));
+        portrait.add(this.add.ellipse(-6, -13, 4, 9, 0xffffff, 0.4));
+        portrait.add(this.add.text(0, 44, 'FIELD ENGINEER', {
+            fontFamily: 'Arial',
+            fontSize: '8px',
+            color: '#a8c6d6',
+            fontStyle: 'bold',
+            letterSpacing: 1
+        }).setOrigin(0.5));
+        this.briefingLayer.add(portrait);
+
+        this.tweens.add({
+            targets: portrait,
+            y: 217,
+            duration: 1300,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+        this.tweens.add({
+            targets: glow,
+            alpha: { from: 0.035, to: 0.12 },
+            scale: { from: 0.96, to: 1.06 },
+            duration: 1600,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+    }
+
     private drawScene() {
-        this.add.rectangle(512, 384, 1024, 768, 0x081320);
+        this.add.rectangle(512, 384, 1024, 768, 0x07111f);
+        this.drawAtmosphere();
         this.drawStars();
-        this.drawMoon();
+        this.drawEarth();
         this.drawHeader();
         this.drawMap();
         this.drawPanel();
@@ -535,79 +798,138 @@ export class ExpansionScene extends ChapterScene {
     }
 
     private drawStars() {
-        for (let index = 0; index < 38; index++) {
-            const x = 20 + ((index * 127 + 41) % 984);
-            const y = 8 + ((index * 61 + 17) % 145);
-            const star = this.add.circle(x, y, index % 7 === 0 ? 2 : 1.2, 0xd7e9ff, 0.45);
+        for (let index = 0; index < 54; index++) {
+            const x = 18 + ((index * 127 + 41) % 988);
+            const y = 8 + ((index * 61 + 17) % 166);
+            const star = this.add.circle(x, y, index % 9 === 0 ? 1.8 : 1, 0xd7e9ff, 0.45);
             this.stars.push(star);
             this.tweens.add({
                 targets: star,
-                alpha: { from: 0.2, to: 0.8 },
-                duration: 900 + (index % 5) * 280,
+                alpha: { from: 0.18, to: index % 9 === 0 ? 0.92 : 0.66 },
+                scale: { from: 0.8, to: index % 9 === 0 ? 1.4 : 1.1 },
+                duration: 1100 + (index % 7) * 280,
                 yoyo: true,
                 repeat: -1,
                 delay: (index % 8) * 170
             });
+            if (index % 9 === 0) {
+                this.add.rectangle(x, y, 7, 1, 0xc5ddf6, 0.36);
+                this.add.rectangle(x, y, 1, 7, 0xc5ddf6, 0.36);
+            }
         }
     }
 
-    private drawMoon() {
-        this.add.circle(950, 49, 23, 0xe7edf5, 0.92);
-        this.add.circle(960, 40, 23, 0x081320, 1);
-        this.add.circle(936, 50, 3, 0xadb9c7, 0.55);
-        this.add.circle(943, 62, 2, 0xb9c4d2, 0.5);
-        this.add.circle(949, 48, 1, 0x75889e, 0.55);
-        this.add.circle(959, 57, 2, 0x9caabc, 0.45);
-        this.add.ellipse(950, 49, 66, 54, 0x63aee5, 0.035);
+    private drawAtmosphere() {
+        this.add.ellipse(290, 142, 580, 188, 0x6a8bb5, 0.045);
+        this.add.ellipse(800, 116, 390, 180, 0x55a1c7, 0.045);
+        this.add.ellipse(346, 196, 690, 104, 0x8292a2, 0.11);
+        this.add.ellipse(757, 190, 588, 94, 0x536579, 0.18);
+        this.add.ellipse(442, 218, 830, 95, 0x28384a, 0.72);
+        this.add.ellipse(950, 621, 840, 178, 0x131e29, 0.46);
+        this.add.ellipse(88, 638, 520, 134, 0x1b2835, 0.38);
+        this.add.ellipse(820, 662, 552, 145, 0x1b2936, 0.35);
+
+        const horizon = this.add.graphics().setDepth(1);
+        horizon.fillStyle(0x1b2937, 0.76);
+        horizon.fillTriangle(0, 184, 0, 152, 165, 184);
+        horizon.fillTriangle(125, 184, 274, 145, 408, 184);
+        horizon.fillTriangle(462, 184, 610, 158, 763, 184);
+        horizon.fillTriangle(756, 184, 911, 143, 1024, 166);
+        horizon.fillStyle(0x253445, 0.55);
+        horizon.fillTriangle(0, 184, 99, 166, 221, 184);
+        horizon.fillTriangle(540, 184, 718, 164, 860, 184);
+    }
+
+    private drawEarth() {
+        this.add.circle(950, 54, 43, 0x5ca8d7, 0.045);
+        this.add.circle(950, 54, 34, 0x5ca8d7, 0.08);
+        this.add.circle(950, 52, 25, 0x2a608b)
+            .setStrokeStyle(1.5, 0x9ee3ff, 0.85);
+        this.add.ellipse(944, 43, 14, 8, 0x76ce9b);
+        this.add.ellipse(957, 54, 11, 14, 0x65b988);
+        this.add.ellipse(939, 61, 8, 5, 0x70c793);
+        this.add.ellipse(944, 38, 13, 3, 0xe8f5ff, 0.82);
+        this.add.ellipse(958, 47, 8, 2.5, 0xe8f5ff, 0.72);
+        this.add.ellipse(950, 32, 7, 4, 0xffffff, 0.16);
+        this.add.text(950, 84, 'EARTH  /  1.3 s', {
+            fontFamily: 'Arial',
+            fontSize: '8px',
+            color: '#91b9d1',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        this.add.ellipse(950, 54, 83, 61, 0x63aee5, 0.025);
     }
 
     private drawHeader() {
-        this.add.text(28, 18, 'STAGE 4  /  CHAPTER 6', {
+        const headerPill = this.add.graphics();
+        headerPill.fillStyle(0x14283a, 0.9);
+        headerPill.fillRoundedRect(28, 12, 196, 22, 8);
+        headerPill.lineStyle(1, 0x356077, 0.9);
+        headerPill.strokeRoundedRect(28, 12, 196, 22, 8);
+        this.add.circle(39, 34, 4, 0x72d99a);
+        this.add.text(50, 18, 'LUNAR OUTPOST  /  STAGE 04', {
             fontFamily: 'Arial',
-            fontSize: '13px',
-            color: '#91a9c5',
+            fontSize: '10px',
+            color: '#9dc7d7',
             fontStyle: 'bold'
         });
-        this.add.text(28, 39, 'GROW THE MOON BASE', {
+        this.add.text(28, 48, 'GROW THE MOON BASE', {
             fontFamily: 'Arial',
-            fontSize: '31px',
+            fontSize: '29px',
             color: '#ffffff',
             fontStyle: 'bold'
         });
-        this.add.text(30, 78, 'Explore safely, keep your suit in shape, and choose what your crew needs next.', {
+        this.add.text(30, 84, 'Explore safely, keep your suit in shape, and choose what your crew needs next.', {
             fontFamily: 'Arial',
-            fontSize: '15px',
-            color: '#c4d2e3'
+            fontSize: '13px',
+            color: '#bbcada'
         });
-        this.add.rectangle(512, 106, 968, 1, 0x263a50, 0.9);
-        this.add.rectangle(58, 106, 54, 2, 0x65d4b8);
+        this.add.rectangle(512, 106, 968, 1, 0x31475b, 0.9);
+        this.add.rectangle(67, 106, 78, 2, 0x65d4b8);
+        this.add.rectangle(111, 106, 8, 2, 0xc1f2e7);
     }
 
     private drawResourceHud() {
         const cards = [
-            { label: '⚡ ENERGY', color: 0xf2c963, value: () => this.energy },
-            { label: 'O₂ OXYGEN', color: 0x66c9f2, value: () => this.oxygen },
-            { label: '🛡 SUIT SHIELD', color: 0x72d99a, value: () => this.suitIntegrity },
-            { label: '☢ RADIATION DOSE', color: 0xff806f, value: () => this.radiationDose }
+            { label: '⚡  ENERGY', key: 'energy' as const, color: 0xf2c963 },
+            { label: 'O₂  OXYGEN', key: 'oxygen' as const, color: 0x66c9f2 },
+            { label: '🛡  SUIT SHIELD', key: 'suitIntegrity' as const, color: 0x72d99a },
+            { label: '☢  RADIATION DOSE', key: 'radiationDose' as const, color: 0xff806f }
         ];
         this.resourceBars = this.add.graphics().setDepth(20);
 
         cards.forEach((card, index) => {
             const x = 28 + index * 246;
-            this.add.rectangle(x + 112, 131, 224, 44, 0x172b40)
-                .setStrokeStyle(1.5, 0x42617d);
+            const shell = this.add.graphics();
+            shell.fillStyle(0x142338, 0.96);
+            shell.fillRoundedRect(x, 109, 224, 46, 8);
+            shell.fillStyle(0x192b40, 0.95);
+            shell.fillRoundedRect(x + 2, 111, 220, 42, 6);
+            shell.fillStyle(card.color, 0.9);
+            shell.fillRoundedRect(x, 109, 3, 46, 2);
+            shell.lineStyle(1, 0x4b6681, 0.86);
+            shell.strokeRoundedRect(x, 109, 224, 46, 8);
             this.add.text(x + 10, 116, card.label, {
                 fontFamily: 'Arial',
-                fontSize: '13px',
+                fontSize: '11px',
                 color: '#eef6ff',
                 fontStyle: 'bold'
             });
-            this.resourceText.push(this.add.text(x + 210, 114, '100%', {
+            this.resourceText.push(this.add.text(x + 213, 115, '100%', {
                 fontFamily: 'Arial',
-                fontSize: '15px',
-                color: '#ffffff',
+                fontSize: '13px',
+                color: '#f5f8fc',
                 fontStyle: 'bold'
             }).setOrigin(1, 0));
+            const indicator = this.add.circle(x + 211, 140, 2.5, card.color);
+            this.tweens.add({
+                targets: indicator,
+                alpha: { from: 0.4, to: 1 },
+                scale: { from: 0.8, to: 1.3 },
+                duration: 950 + index * 150,
+                yoyo: true,
+                repeat: -1
+            });
         });
     }
 
@@ -617,10 +939,17 @@ export class ExpansionScene extends ChapterScene {
         this.mapLayer.add(this.add.rectangle(
             this.boardLeft + width / 2,
             this.boardTop + height / 2,
-            width + 10,
-            height + 10,
-            0x0d1b28
-        ).setStrokeStyle(2, 0x65768a));
+            width + 22,
+            height + 22,
+            0x0b1623
+        ).setStrokeStyle(2, 0x60788e));
+        this.mapLayer.add(this.add.rectangle(
+            this.boardLeft + width / 2,
+            this.boardTop + height / 2,
+            width + 12,
+            height + 12,
+            0x172432
+        ).setStrokeStyle(1, 0xa2bac9, 0.36));
 
         const craters: Point[] = [
             { x: 0, y: 0 }, { x: 5, y: 0 }, { x: 9, y: 0 },
@@ -632,25 +961,21 @@ export class ExpansionScene extends ChapterScene {
         for (let y = 0; y < this.rows; y++) {
             for (let x = 0; x < this.columns; x++) {
                 const center = this.tileCenter({ x, y });
-                const shade = (x + y) % 3 === 0 ? 0x303d49 : 0x2b3743;
+                const shade = (x + y) % 4 === 0 ? 0x303c47 : (x * 3 + y) % 3 === 0 ? 0x2b3844 : 0x293641;
                 this.mapLayer.add(this.add.rectangle(
                     center.x,
                     center.y,
-                    this.cellSize - 2,
-                    this.cellSize - 2,
+                    this.cellSize - 1,
+                    this.cellSize - 1,
                     shade
-                ).setStrokeStyle(1, 0x3c4b58));
+                ).setStrokeStyle(1, 0x364653, 0.82));
 
                 if (craters.some((crater) => crater.x === x && crater.y === y)) {
-                    this.mapLayer.add(this.add.ellipse(center.x + 9, center.y + 11, 40, 27, 0x1d2934, 0.9)
-                        .setStrokeStyle(1, 0x58636b, 0.45));
-                    this.mapLayer.add(this.add.ellipse(center.x + 6, center.y + 7, 29, 18, 0x46525c, 0.8));
-                    this.mapLayer.add(this.add.ellipse(center.x + 6, center.y + 8, 23, 13, 0x2a3641, 0.65));
-                }
-
-                if ((x * 7 + y * 3) % 11 === 0) {
-                    this.mapLayer.add(this.add.circle(center.x - 19, center.y - 17, 1.6, 0x8995a0, 0.6));
-                    this.mapLayer.add(this.add.circle(center.x + 22, center.y - 10, 1, 0xb4bdc5, 0.55));
+                    this.mapLayer.add(this.add.ellipse(center.x + 8, center.y + 12, 42, 27, 0x101a24, 0.85));
+                    this.mapLayer.add(this.add.ellipse(center.x + 6, center.y + 7, 35, 22, 0x53606b, 0.68)
+                        .setStrokeStyle(1.5, 0xaab3b8, 0.34));
+                    this.mapLayer.add(this.add.ellipse(center.x + 6, center.y + 9, 27, 15, 0x202c37, 0.91));
+                    this.mapLayer.add(this.add.ellipse(center.x + 5, center.y + 6, 18, 7, 0x71808b, 0.17));
                 }
 
                 if ((x * 11 + y * 5) % 13 === 2) {
@@ -658,6 +983,22 @@ export class ExpansionScene extends ChapterScene {
                         .setStrokeStyle(1, 0xa2abb1, 0.28);
                     this.mapLayer.add(rock);
                     this.mapLayer.add(this.add.ellipse(center.x - 12, center.y + 19, 11, 3, 0x101b26, 0.5));
+                }
+            }
+        }
+
+        const regolith = this.add.graphics();
+        this.mapLayer.add(regolith);
+        for (let y = 0; y < this.rows; y++) {
+            for (let x = 0; x < this.columns; x++) {
+                const center = this.tileCenter({ x, y });
+                for (let detail = 0; detail < 4; detail++) {
+                    const seed = x * 71 + y * 43 + detail * 29;
+                    const speckX = center.x - 26 + (seed * 17) % 53;
+                    const speckY = center.y - 25 + (seed * 31) % 51;
+                    const color = detail % 2 === 0 ? 0xb8c3cc : 0x111d29;
+                    regolith.fillStyle(color, detail % 2 === 0 ? 0.19 : 0.32);
+                    regolith.fillCircle(speckX, speckY, detail === 0 ? 1.4 : 0.8);
                 }
             }
         }
@@ -696,14 +1037,32 @@ export class ExpansionScene extends ChapterScene {
     }
 
     private drawPanel() {
-        this.add.rectangle(838, 400, 300, 444, 0x111f31)
-            .setStrokeStyle(2, 0x30465f);
+        const panel = this.add.graphics();
+        panel.fillStyle(0x091522, 0.42);
+        panel.fillRoundedRect(696, 184, 300, 444, 14);
+        panel.fillStyle(0x111f31, 0.98);
+        panel.fillRoundedRect(688, 176, 300, 444, 14);
+        panel.fillStyle(0x16283b, 0.8);
+        panel.fillRoundedRect(692, 180, 292, 436, 11);
+        panel.lineStyle(1.5, 0x45617c, 0.92);
+        panel.strokeRoundedRect(688, 176, 300, 444, 14);
+        panel.fillStyle(0x69d8c0, 0.9);
+        panel.fillRoundedRect(706, 176, 56, 3, 2);
+        panel.fillStyle(0x30465f, 0.72);
+        panel.fillRect(706, 325, 264, 1);
         this.add.text(706, 190, 'MISSION CONTROL', {
             fontFamily: 'Arial',
             fontSize: '13px',
             color: '#91a9c5',
             fontStyle: 'bold'
         });
+        this.add.circle(966, 198, 3, 0x74e0bd);
+        this.add.text(958, 190, 'LIVE', {
+            fontFamily: 'Arial',
+            fontSize: '8px',
+            color: '#8de8ce',
+            fontStyle: 'bold'
+        }).setOrigin(1, 0);
 
         this.supplyText = this.add.text(706, 216, '', {
             fontFamily: 'Arial',
@@ -745,7 +1104,6 @@ export class ExpansionScene extends ChapterScene {
             color: '#c4d2e3'
         });
 
-        this.add.rectangle(838, 326, 270, 1, 0x30465f);
         this.add.text(706, 337, 'EXPANSION OPTIONS', {
             fontFamily: 'Arial',
             fontSize: '12px',
@@ -761,15 +1119,19 @@ export class ExpansionScene extends ChapterScene {
             this.buildingCards.push({ kind: option.kind, frame: card });
             card.on('pointerover', () => {
                 if (this.phase === 'build') {
+                    card.setFillStyle(0x23394f);
                     card.setStrokeStyle(1, option.color);
                 }
             });
             card.on('pointerout', () => {
+                card.setFillStyle(this.selectedBuilding === option.kind ? 0x264252 : 0x192a3d);
                 if (this.selectedBuilding !== option.kind) {
                     card.setStrokeStyle(1, 0x354c64);
                 }
             });
-            this.add.circle(718, y + 13, 7, option.color);
+            this.add.circle(718, y + 13, 10, option.color, 0.08);
+            this.add.circle(718, y + 13, 5, option.color)
+                .setStrokeStyle(1, 0xe9f7ff, 0.55);
             this.add.text(732, y + 3, option.title, {
                 fontFamily: 'Arial',
                 fontSize: '12px',
@@ -794,8 +1156,13 @@ export class ExpansionScene extends ChapterScene {
             });
         });
 
-        this.add.rectangle(838, 582, 270, 66, 0x172b3b)
-            .setStrokeStyle(1, 0x30465f);
+        const statusPanel = this.add.graphics();
+        statusPanel.fillStyle(0x101d2c, 1);
+        statusPanel.fillRoundedRect(702, 550, 272, 68, 8);
+        statusPanel.lineStyle(1, 0x3a5369, 0.9);
+        statusPanel.strokeRoundedRect(702, 550, 272, 68, 8);
+        statusPanel.fillStyle(0x70d7bd, 0.85);
+        statusPanel.fillRoundedRect(702, 550, 3, 68, 2);
         this.statusText = this.add.text(710, 554, '', {
             fontFamily: 'Arial',
             fontSize: '11px',
@@ -812,16 +1179,24 @@ export class ExpansionScene extends ChapterScene {
     }
 
     private drawFooter() {
-        this.add.text(28, 646, 'Moving uses more O₂  •  Resting uses less  •  R patches your suit  •  E refills near buildings', {
+        const mapCaption = this.add.graphics();
+        mapCaption.fillStyle(0x0c1926, 0.88);
+        mapCaption.fillRoundedRect(28, 160, 632, 20, 6);
+        mapCaption.lineStyle(1, 0x354c61, 0.78);
+        mapCaption.strokeRoundedRect(28, 160, 632, 20, 6);
+        this.add.circle(41, 170, 3, 0x68d8bc);
+        this.add.text(51, 164, 'LUNAR SURFACE  /  SUPPLY ROUTE', {
             fontFamily: 'Arial',
-            fontSize: '12px',
-            color: '#aebed0'
+            fontSize: '9px',
+            color: '#72d9c2',
+            fontStyle: 'bold'
         });
-        this.add.text(28, 671, 'Radiation rises when your shield drops below 60%. Repairs cost energy; shelters are safe places to stop.', {
+        this.add.text(646, 164, '3 KITS REQUIRED', {
             fontFamily: 'Arial',
-            fontSize: '11px',
-            color: '#8094aa'
-        });
+            fontSize: '8px',
+            color: '#b8cbdc',
+            fontStyle: 'bold'
+        }).setOrigin(1, 0);
     }
 
     private drawAstronaut() {
@@ -829,39 +1204,51 @@ export class ExpansionScene extends ChapterScene {
         const sprite = this.add.container(center.x, center.y);
         sprite.setDepth(10);
         sprite.add(this.add.ellipse(0, 22, 32, 10, 0x09131f, 0.75));
+        sprite.add(this.add.ellipse(0, 15, 44, 21, 0x67d9e8, 0.035));
         this.astronautShieldAura = this.add.circle(0, -2, 27, 0x6fd8e9, 0.04)
             .setStrokeStyle(2, 0x8be9f5, 0.52);
         sprite.add(this.astronautShieldAura);
-        sprite.add(this.add.rectangle(-19, 8, 8, 23, 0xa2b6c8)
-            .setStrokeStyle(1, 0x748ba1));
-        sprite.add(this.add.rectangle(-19, 2, 10, 8, 0x4b667e));
-        sprite.add(this.add.rectangle(0, 8, 23, 27, 0xdde8f2)
-            .setStrokeStyle(2, 0x86a2bb));
+        sprite.add(this.add.rectangle(-19, 8, 11, 25, 0x738da4)
+            .setStrokeStyle(1, 0xb9cbd9, 0.8));
+        sprite.add(this.add.rectangle(-19, 1, 13, 9, 0x3c596f)
+            .setStrokeStyle(1, 0x86a2bb));
+        sprite.add(this.add.rectangle(-19, 11, 6, 8, 0x243b51));
+        sprite.add(this.add.ellipse(0, 9, 26, 34, 0xcbd8e3)
+            .setStrokeStyle(2, 0xeff7ff, 0.95));
+        sprite.add(this.add.ellipse(0, 4, 20, 20, 0xe7eef4, 0.92));
+        sprite.add(this.add.rectangle(0, 9, 15, 18, 0xc3d1dd)
+            .setStrokeStyle(1, 0xeff7ff, 0.78));
+        sprite.add(this.add.rectangle(-10, -1, 4, 9, 0xf0f6fa));
+        sprite.add(this.add.rectangle(10, -1, 4, 9, 0xf0f6fa));
         this.astronautArmLeft = this.add.rectangle(-16, 8, 7, 17, 0xb2c5d5)
             .setStrokeStyle(1, 0x7f97ad);
         this.astronautArmRight = this.add.rectangle(16, 8, 7, 17, 0xb2c5d5)
             .setStrokeStyle(1, 0x7f97ad);
         sprite.add(this.astronautArmLeft);
         sprite.add(this.astronautArmRight);
+        sprite.add(this.add.circle(-17, 17, 4, 0xf1f5f8).setStrokeStyle(1, 0x8199ad));
+        sprite.add(this.add.circle(17, 17, 4, 0xf1f5f8).setStrokeStyle(1, 0x8199ad));
         this.astronautLegLeft = this.add.rectangle(-7, 25, 8, 12, 0x8fa6bb)
             .setStrokeStyle(1, 0x647e96);
         this.astronautLegRight = this.add.rectangle(7, 25, 8, 12, 0x8fa6bb)
             .setStrokeStyle(1, 0x647e96);
         sprite.add(this.astronautLegLeft);
         sprite.add(this.astronautLegRight);
-        sprite.add(this.add.rectangle(-7, 31, 11, 4, 0x394b60));
-        sprite.add(this.add.rectangle(7, 31, 11, 4, 0x394b60));
-        sprite.add(this.add.circle(0, -11, 17, 0xeaf0f6)
-            .setStrokeStyle(2, 0x95b0c9));
-        sprite.add(this.add.ellipse(6, -11, 12, 14, 0x59afd5));
-        sprite.add(this.add.ellipse(8, -15, 5, 3, 0xc4edff, 0.9));
-        sprite.add(this.add.ellipse(0, -11, 27, 24, 0x21374d, 0.22)
-            .setStrokeStyle(1, 0xa9d9ea, 0.7));
-        sprite.add(this.add.rectangle(0, 0, 21, 5, 0x49b8a5));
-        sprite.add(this.add.rectangle(0, 9, 11, 10, 0x294157).setStrokeStyle(1, 0x66849e));
-        sprite.add(this.add.circle(0, 9, 2, 0xf6d36e));
-        sprite.add(this.add.circle(-5, 9, 1.4, 0x77ddc0));
-        sprite.add(this.add.line(0, 4, 0, -2, 0, -6, 0x6c8298).setLineWidth(1));
+        sprite.add(this.add.rectangle(-7, 31, 12, 5, 0x26394b).setStrokeStyle(1, 0x8298ab));
+        sprite.add(this.add.rectangle(7, 31, 12, 5, 0x26394b).setStrokeStyle(1, 0x8298ab));
+        sprite.add(this.add.circle(0, -11, 18, 0xdce7ef)
+            .setStrokeStyle(2, 0xffffff, 0.94));
+        sprite.add(this.add.ellipse(5, -12, 15, 15, 0x1d526f)
+            .setStrokeStyle(1, 0x7ce0ed, 0.86));
+        sprite.add(this.add.ellipse(8, -16, 6, 3, 0xd7f8ff, 0.95));
+        sprite.add(this.add.ellipse(-7, -11, 4, 8, 0xffffff, 0.42));
+        sprite.add(this.add.line(0, -2, -10, -3, 10, -3, 0x91a9bc).setLineWidth(1));
+        sprite.add(this.add.rectangle(0, 0, 21, 4, 0x49b8a5));
+        sprite.add(this.add.rectangle(0, 10, 12, 11, 0x294157).setStrokeStyle(1, 0x66849e));
+        sprite.add(this.add.rectangle(0, 7, 8, 2, 0x6fc9d3));
+        sprite.add(this.add.circle(0, 12, 2, 0xf6d36e));
+        sprite.add(this.add.circle(-5, 12, 1.4, 0x77ddc0));
+        sprite.add(this.add.line(0, 3, 0, -2, 0, -6, 0x6c8298).setLineWidth(1));
         this.astronautSprite = sprite;
 
         this.tweens.add({
@@ -881,14 +1268,19 @@ export class ExpansionScene extends ChapterScene {
         const center = this.tileCenter(crate);
         const marker = this.add.container(center.x, center.y);
         marker.setDepth(4);
-        marker.add(this.add.circle(0, 0, 25, 0xf3b65e, 0.1));
-        marker.add(this.add.rectangle(0, 1, 29, 29, 0xc77f3d)
+        marker.add(this.add.circle(0, 3, 30, 0xf3b65e, 0.055));
+        marker.add(this.add.ellipse(0, 19, 38, 12, 0x07121d, 0.62));
+        marker.add(this.add.rectangle(0, 1, 31, 31, 0x8c5c38)
             .setStrokeStyle(2, 0xffd48c));
-        marker.add(this.add.rectangle(0, 1, 9, 29, 0xf1b967, 0.8));
-        marker.add(this.add.rectangle(0, -5, 29, 6, 0xffd48c));
-        marker.add(this.add.text(0, -19, '+', {
+        marker.add(this.add.rectangle(0, 1, 25, 25, 0xc77f3d)
+            .setStrokeStyle(1, 0xf7c87d, 0.85));
+        marker.add(this.add.rectangle(0, 1, 7, 25, 0xf1b967, 0.88));
+        marker.add(this.add.rectangle(0, -5, 31, 5, 0xffd48c));
+        marker.add(this.add.line(0, 1, -12, -9, -12, 11, 0xffe6b5).setLineWidth(1, 0.8));
+        marker.add(this.add.line(0, 1, 12, -9, 12, 11, 0x754b31).setLineWidth(1, 0.8));
+        marker.add(this.add.text(0, -18, '+', {
             fontFamily: 'Arial',
-            fontSize: '18px',
+            fontSize: '16px',
             color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5));
@@ -920,14 +1312,18 @@ export class ExpansionScene extends ChapterScene {
         const color = option?.color ?? 0x9eb7d2;
         const marker = this.add.container(center.x, center.y);
         marker.setDepth(5);
+        marker.add(this.add.circle(0, 2, 33, color, 0.055));
         marker.add(this.add.ellipse(0, 20, 53, 14, 0x09131f, 0.7));
 
         if (structure.kind === 'solar') {
-            marker.add(this.add.rectangle(0, 2, 54, 28, 0x24496a).setStrokeStyle(2, color));
+            marker.add(this.add.rectangle(0, 2, 54, 28, 0x173550).setStrokeStyle(2, color));
+            marker.add(this.add.rectangle(0, 2, 48, 22, 0x276288, 0.92));
             marker.add(this.add.line(0, 2, -17, -11, -17, 15, color).setLineWidth(1));
             marker.add(this.add.line(0, 2, 0, -11, 0, 15, color).setLineWidth(1));
             marker.add(this.add.line(0, 2, 17, -11, 17, 15, color).setLineWidth(1));
             marker.add(this.add.line(0, 2, -27, 2, 27, 2, color).setLineWidth(1));
+            marker.add(this.add.line(0, 2, -24, -4, 24, -4, 0x77bce1, 0.45).setLineWidth(1));
+            marker.add(this.add.line(0, 2, -24, 9, 24, 9, 0x77bce1, 0.45).setLineWidth(1));
             marker.add(this.add.rectangle(0, 19, 5, 12, 0xb5c4d1));
             const glint = this.add.rectangle(-22, 2, 5, 25, 0xb8f1ff, 0.72);
             marker.add(glint);
@@ -941,10 +1337,14 @@ export class ExpansionScene extends ChapterScene {
                 ease: 'Sine.easeInOut'
             });
         } else if (structure.kind === 'greenhouse') {
-            marker.add(this.add.rectangle(0, 4, 49, 34, 0x276556, 0.88).setStrokeStyle(2, color));
-            marker.add(this.add.triangle(0, -13, -25, 13, 25, 13, 0, -13, 0x9ae1c2, 0.75));
+            marker.add(this.add.ellipse(0, 4, 63, 53, 0x74e5b3, 0.06));
+            marker.add(this.add.rectangle(0, 4, 49, 34, 0x183e3c, 0.94).setStrokeStyle(2, color));
+            marker.add(this.add.triangle(0, -13, -25, 13, 25, 13, 0, -13, 0x88dabb, 0.5)
+                .setStrokeStyle(2, 0xc3f7de, 0.9));
             marker.add(this.add.line(-9, -4, -9, 19, 6, 19, color).setLineWidth(2));
             marker.add(this.add.line(10, -5, 10, 19, 20, 19, color).setLineWidth(2));
+            marker.add(this.add.rectangle(0, 7, 2, 21, 0xb5f5d2, 0.6));
+            marker.add(this.add.rectangle(0, 18, 40, 2, 0x315e4d));
             const growLight = this.add.rectangle(0, -2, 32, 4, 0xf6e48f, 0.72);
             marker.add(growLight);
             this.tweens.add({
@@ -971,7 +1371,10 @@ export class ExpansionScene extends ChapterScene {
             });
         } else if (structure.kind === 'shelter') {
             marker.add(this.add.rectangle(0, 2, 51, 34, 0x493a42).setStrokeStyle(2, color));
+            marker.add(this.add.rectangle(0, -10, 42, 4, 0x826a62));
             marker.add(this.add.rectangle(0, 9, 14, 20, 0x182637));
+            marker.add(this.add.rectangle(-16, 2, 5, 24, 0x6d7377));
+            marker.add(this.add.rectangle(16, 2, 5, 24, 0x6d7377));
             marker.add(this.add.line(0, -15, 0, -25, 0, -14, color).setLineWidth(3));
             const beacon = this.add.circle(0, -27, 4, 0xffc096);
             marker.add(beacon);
@@ -984,7 +1387,8 @@ export class ExpansionScene extends ChapterScene {
                 repeat: -1
             });
         } else if (structure.kind === 'relay') {
-            marker.add(this.add.rectangle(0, 9, 5, 22, 0xc1cfda));
+            marker.add(this.add.ellipse(0, 17, 20, 7, 0x0d1b27, 0.7));
+            marker.add(this.add.rectangle(0, 9, 5, 22, 0xc1cfda).setStrokeStyle(1, 0xffffff, 0.7));
             marker.add(this.add.line(0, -14, -14, -1, 14, -1, color).setLineWidth(3));
             const signalSmall = this.add.arc(0, -15, 17, 205, 335, false, color).setStrokeStyle(2, color);
             const signalLarge = this.add.arc(0, -15, 26, 210, 330, false, color, 0.7).setStrokeStyle(1, color, 0.7);
@@ -1003,15 +1407,21 @@ export class ExpansionScene extends ChapterScene {
                 });
             });
         } else if (structure.kind === 'garage') {
-            marker.add(this.add.rectangle(0, 1, 52, 36, 0x304359).setStrokeStyle(2, color));
-            marker.add(this.add.rectangle(0, 8, 31, 22, 0x101c29));
+            marker.add(this.add.rectangle(0, 1, 52, 36, 0x273b50).setStrokeStyle(2, color));
+            marker.add(this.add.rectangle(0, 8, 34, 23, 0x101c29).setStrokeStyle(1, 0x6988a2));
             marker.add(this.add.rectangle(0, 20, 42, 4, color));
+            marker.add(this.add.rectangle(-7, 12, 22, 7, 0x426e83));
+            marker.add(this.add.circle(-14, 19, 4, 0x121f2b).setStrokeStyle(1, 0xaec2d2));
+            marker.add(this.add.circle(2, 19, 4, 0x121f2b).setStrokeStyle(1, 0xaec2d2));
+            marker.add(this.add.circle(-7, 11, 1.5, 0xd6f4ff));
         } else if (structure.kind === 'recycler') {
             marker.add(this.add.rectangle(0, 3, 42, 39, 0x34415a).setStrokeStyle(2, color));
             const turbine = this.add.circle(0, -3, 11, 0x17283d).setStrokeStyle(3, color);
             marker.add(turbine);
             marker.add(this.add.circle(0, -3, 3, color));
             marker.add(this.add.rectangle(0, 18, 25, 4, color));
+            marker.add(this.add.rectangle(0, 11, 33, 2, 0x7787a0));
+            marker.add(this.add.circle(13, 14, 2, 0x80e0bd));
             this.tweens.add({
                 targets: turbine,
                 angle: 360,
@@ -1019,11 +1429,14 @@ export class ExpansionScene extends ChapterScene {
                 repeat: -1
             });
         } else {
-            marker.add(this.add.rectangle(0, 3, 52, 38, 0x40536a).setStrokeStyle(2, color));
+            marker.add(this.add.rectangle(0, 3, 52, 38, 0x33485e).setStrokeStyle(2, color));
             marker.add(this.add.rectangle(0, -13, 58, 9, color));
             marker.add(this.add.rectangle(-17, 8, 7, 13, 0x162638));
             marker.add(this.add.rectangle(0, 8, 7, 13, 0x162638));
             marker.add(this.add.rectangle(17, 8, 7, 13, 0x162638));
+            marker.add(this.add.rectangle(-17, -6, 6, 8, 0x50687f));
+            marker.add(this.add.rectangle(17, -6, 6, 8, 0x50687f));
+            marker.add(this.add.line(0, -16, -24, -9, 24, -9, 0xffffff, 0.38).setLineWidth(1));
             [-17, 0, 17].forEach((windowX, index) => {
                 const light = this.add.rectangle(windowX, 8, 4, 8, 0x84e8dc, 0.8);
                 marker.add(light);
@@ -1264,6 +1677,17 @@ export class ExpansionScene extends ChapterScene {
         if (this.phase === 'complete' || this.phase === 'failed') {
             this.drawEndOverlay(this.phase === 'complete');
         }
+        this.updateExpansionDiagnostics();
+    }
+
+    private updateExpansionDiagnostics() {
+        const canvas = this.game?.canvas;
+        if (!canvas) {
+            return;
+        }
+        canvas.dataset.expansionPhase = this.phase;
+        canvas.dataset.expansionSupplies = String(this.crates.filter((crate) => crate.collected).length);
+        canvas.dataset.expansionBuilds = String(this.structures.length - 1);
     }
 
     private updateResourceBars(seconds: number) {
@@ -1279,27 +1703,34 @@ export class ExpansionScene extends ChapterScene {
             this.displayedResources.suitIntegrity,
             this.displayedResources.radiationDose
         ];
+        const resourceKeys = ['energy', 'oxygen', 'suitIntegrity', 'radiationDose'] as const;
         const colors = [0xf2c963, 0x66c9f2, 0x72d99a, 0xff806f];
         this.resourceBars.clear();
         values.forEach((value, index) => {
             const x = 38 + index * 246;
             const fillWidth = 204 * Math.max(0, Math.min(1, value / MAX_RESOURCE));
-            const color = index === 3 && value >= 45
+            const state = getExpansionResourceState(resourceKeys[index], value);
+            const color = state === 'danger'
                 ? 0xff806f
-                : index === 2 && value < 60
+                : state === 'warning'
                     ? 0xffa762
-                    : index === 1 && value < 25
-                        ? 0xff806f
-                        : colors[index];
+                    : colors[index];
             this.resourceBars.fillStyle(0x31485e, 1);
-            this.resourceBars.fillRoundedRect(x, 133, 204, 10, 5);
+            this.resourceBars.fillRoundedRect(x - 2, 131, 208, 14, 7);
             if (fillWidth > 0.5) {
-                this.resourceBars.fillStyle(color, 0.3);
-                this.resourceBars.fillRoundedRect(x - 2, 130, fillWidth + 4, 16, 7);
+                this.resourceBars.fillStyle(color, state === 'normal' ? 0.22 : 0.4);
+                this.resourceBars.fillRoundedRect(x - 3, 129, fillWidth + 6, 18, 8);
                 this.resourceBars.fillStyle(color, 1);
                 this.resourceBars.fillRoundedRect(x, 133, fillWidth, 10, 5);
-                this.resourceBars.fillStyle(0xffffff, 0.65);
+                this.resourceBars.fillStyle(0xffffff, 0.55);
                 this.resourceBars.fillRoundedRect(x + 2, 134, Math.max(0, fillWidth - 4), 2, 1);
+                this.resourceBars.fillStyle(0x081320, 0.32);
+                for (let notch = 1; notch < 10; notch++) {
+                    const notchX = x + notch * 20.4;
+                    if (notchX < x + fillWidth - 1) {
+                        this.resourceBars.fillRect(notchX, 133, 1, 10);
+                    }
+                }
             }
         });
 
