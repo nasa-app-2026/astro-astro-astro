@@ -27,7 +27,7 @@ export const LANDING_SURFACE_Y = 390;
 export const LANDING_PAD_X = 730;
 export const LANDING_START: LandingState = {
   x: 600,
-  y: 300,
+  y: 120,
   horizontalSpeed: 0,
   verticalSpeed: 40,
   fuel: 100,

@@ -35,6 +35,12 @@ describe('first landing flight and rover rules', () => {
     expect(longFrame.y).toBeGreaterThan(LANDING_START.y + 0.05);
   });
 
+  it('gives the player time to react before the lander reaches the surface', () => {
+    const state = stepLanding(LANDING_START, { left: false, right: false, thrust: false }, 2.5);
+
+    expect(landingOutcome(state)).toBe('flight');
+  });
+
   it('accepts a slow touchdown on the beacon and rejects an unsafe approach', () => {
     expect(landingOutcome({
       x: LANDING_PAD_X, y: LANDING_SURFACE_Y - 28, horizontalSpeed: 15, verticalSpeed: 25, fuel: 60, oxygen: 100,
@@ -47,13 +53,17 @@ describe('first landing flight and rover rules', () => {
     })).toBe('crash');
   });
 
-  it('can reach a safe landing using steering and a short engine burn', () => {
+  it('can reach a safe landing by steering and pulsing the engine', () => {
     let state = LANDING_START;
-    for (let frame = 0; frame < 180 && landingOutcome(state) === 'flight'; frame += 1) {
+    let engineOn = false;
+    for (let frame = 0; frame < 900 && landingOutcome(state) === 'flight'; frame += 1) {
+      const descentSpeed = Math.max(0, Math.round(state.verticalSpeed * 0.7));
+      if (!engineOn && descentSpeed > 30) engineOn = true;
+      else if (engineOn && descentSpeed < 10) engineOn = false;
       state = stepLanding(state, {
         left: false,
         right: frame < 51,
-        thrust: frame >= 51 && frame < 72,
+        thrust: engineOn,
       }, 1 / 60);
     }
 

@@ -26,6 +26,10 @@ interface SupplyCrate {
   collected: boolean;
 }
 
+function getAltitudeMeters(state: LandingState): number {
+  return Math.max(0, Math.round((LANDING_SURFACE_Y - state.y - 28) * 0.7));
+}
+
 export class FirstLandingScene extends ChapterScene {
   constructor() { super(chapters[2]); }
 
@@ -222,6 +226,7 @@ export class FirstLandingScene extends ChapterScene {
       this.lander.setVisible(true);
     }
     this.renderLandingHud();
+    this.game.canvas.dataset.firstLandingStartAltitudeM = String(getAltitudeMeters(this.landingState));
   }
 
   private updateLanding(deltaSeconds: number): void {
@@ -236,7 +241,7 @@ export class FirstLandingScene extends ChapterScene {
     this.game.canvas.dataset.firstLandingX = String(this.landingState.x);
     this.setMeter(this.fuelLabel, this.fuelFill, this.landingState.fuel, 'PROPELLANT', 245);
     this.setMeter(this.oxygenLabel, this.oxygenFill, this.landingState.oxygen, 'CABIN OXYGEN', 245);
-    const altitude = Math.max(0, Math.round((LANDING_SURFACE_Y - this.landingState.y - 28) * 0.7));
+    const altitude = getAltitudeMeters(this.landingState);
     const descentSpeed = Math.max(0, Math.round(this.landingState.verticalSpeed * 0.7));
     this.altitudeLabel?.setText(`ALTITUDE  ${altitude} m`);
     this.descentSpeedLabel?.setText(`VERTICAL SPEED  ${descentSpeed} m/s`);
@@ -473,6 +478,7 @@ export class FirstLandingScene extends ChapterScene {
     this.batteryFill = undefined;
     this.suppliesLabel = undefined;
     delete this.game.canvas.dataset.firstLandingAltitudeM;
+    delete this.game.canvas.dataset.firstLandingStartAltitudeM;
     delete this.game.canvas.dataset.firstLandingDescentSpeed;
     delete this.game.canvas.dataset.firstLandingOxygen;
     delete this.game.canvas.dataset.firstLandingBattery;
