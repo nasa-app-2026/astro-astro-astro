@@ -1,3 +1,4 @@
+import { openMission } from './helpers/onboarding';
 import { expect, test } from '@playwright/test';
 import { enterDirectory } from './helpers/onboarding';
 import { power } from '../src/facts/power';
@@ -11,7 +12,7 @@ test('the same choices produce the same saved game state in both age modes', asy
   for (const age of ['7-9', '10-12'] as const) {
     const page = await browser.newPage();
     await enterDirectory(page, age);
-    await page.locator('[data-chapter="survival"]').click();
+    await openMission(page, 'survival');
     await page.getByRole('button', { name: 'Near the south pole' }).click();
     await page.getByRole('button', { name: 'Choose Haworth' }).click();
     await page.getByRole('button', { name: 'Begin Into the dark' }).click();
@@ -29,7 +30,7 @@ test('the same choices produce the same saved game state in both age modes', asy
 test('younger Mons Mouton planning avoids percentages', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
   await enterDirectory(page, '7-9');
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await page.getByRole('button', { name: 'Near the south pole' }).click();
   await page.getByRole('button', { name: 'Choose Mons Mouton' }).click();
   await page.getByRole('button', { name: 'Begin Storm alert' }).click();
@@ -39,7 +40,7 @@ test('younger Mons Mouton planning avoids percentages', async ({ page }) => {
 
 test('younger what-if results use bars and no percentages', async ({ page }) => {
   await enterDirectory(page, '7-9');
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await page.getByRole('button', { name: 'Near the south pole' }).click();
   await page.getByRole('button', { name: 'Choose Haworth' }).click();
   await page.getByRole('button', { name: 'Begin Into the dark' }).click();
@@ -56,7 +57,7 @@ test('younger what-if results use bars and no percentages', async ({ page }) => 
 
 test('what-if compares the same challenge and branches from the chosen morning', async ({ page }) => {
   await enterDirectory(page, '10-12');
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await page.getByRole('button', { name: 'Near the south pole' }).click();
   await page.getByRole('button', { name: 'Choose Haworth' }).click();
   await page.getByRole('button', { name: 'Begin Into the dark' }).click();
@@ -81,7 +82,7 @@ test('what-if compares the same challenge and branches from the chosen morning',
 
 test('source catalog resolves a source displayed in the equator briefing', async ({ page }) => {
   await enterDirectory(page, '10-12');
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await page.getByRole('button', { name: 'Near the equator', exact: true }).click();
   const item = page.locator('[data-fact-id="power.equatorNight"]');
   const sourceKey = power.equatorNight.sources[0];
@@ -121,7 +122,7 @@ for (const age of ['7-9', '10-12'] as const) {
     };
     if (age === '7-9') await page.addInitScript(() => { Storage.prototype.setItem = () => { throw new Error('Storage disabled'); }; });
     await enterDirectory(page, age);
-    await page.locator('[data-chapter="survival"]').click();
+    await openMission(page, 'survival');
     await audit();
     await page.getByRole('button', { name: 'Near the equator' }).click();
     await audit();
@@ -183,7 +184,7 @@ for (const age of ['7-9', '10-12'] as const) {
       await page.getByRole('button', { name: 'Skip' }).click();
       await page.locator(`input[name="ageRange"][value="${age}"]`).check();
       await page.getByRole('button', { name: 'Continue to missions' }).click();
-      await page.locator('[data-chapter="survival"]').click();
+      await openMission(page, 'survival');
       await page.getByRole('button', { name: 'Near the south pole' }).click();
       await page.getByRole('button', { name: 'Choose Haworth' }).click();
       await expect(page.getByRole('button', { name: 'Begin Ice to air' })).toBeVisible();
@@ -201,7 +202,7 @@ for (const age of ['7-9', '10-12'] as const) {
 test('Ice to air digs and splits oxygen through a six-day challenge', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
   await enterDirectory(page, '10-12');
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await page.getByRole('button', { name: 'Near the south pole' }).click();
   await page.getByRole('button', { name: 'Choose Haworth' }).click();
   await page.getByRole('button', { name: 'Begin Ice to air' }).click();
@@ -217,7 +218,7 @@ test('Ice to air digs and splits oxygen through a six-day challenge', async ({ p
 test('Fresh food compares the plant harvest with the crew food use', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
   await enterDirectory(page, '10-12');
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await page.getByRole('button', { name: 'Near the south pole' }).click();
   await page.getByRole('button', { name: 'Choose Haworth' }).click();
   await page.getByRole('button', { name: 'Begin Fresh food' }).click();
@@ -233,7 +234,7 @@ test('Fresh food compares the plant harvest with the crew food use', async ({ pa
 test('Can you hear us sends science on a contact day', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
   await enterDirectory(page, '10-12');
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await page.getByRole('button', { name: 'Near the south pole' }).click();
   await page.getByRole('button', { name: 'Choose Haworth' }).click();
   await page.getByRole('button', { name: 'Begin Can you hear us?' }).click();
@@ -248,7 +249,7 @@ test('Can you hear us sends science on a contact day', async ({ page }) => {
 test('Storm alert planning and quiet challenge reach the debrief', async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
   await enterDirectory(page, '10-12');
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await page.getByRole('button', { name: 'Near the south pole' }).click();
   await page.getByRole('button', { name: 'Choose Haworth' }).click();
   await page.getByRole('button', { name: 'Begin Storm alert' }).click();
@@ -284,7 +285,7 @@ test('Storm alert planning and quiet challenge reach the debrief', async ({ page
 
 test('P8 archived storm rules load in the game without changing Survival navigation', async ({ page }) => {
   await enterDirectory(page);
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   const data = await page.evaluate(async () => {
     const dataPath = '/src/data/chapter5/storms.ts';
     const rulesPath = '/src/rules/chapter5/storms.ts';
@@ -301,7 +302,7 @@ test('P8 archived storm rules load in the game without changing Survival navigat
 
 test('Survival loads its fact adapter and returns to the directory', async ({ page }) => {
   await enterDirectory(page);
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'survival');
   await expect(page.locator('#chapter-label')).toHaveText('Survival');
   // Keep P1's browser import and attribution checks alongside the P2 screen.
@@ -332,7 +333,7 @@ test('Survival loads its fact adapter and returns to the directory', async ({ pa
 for (const age of ['7-9', '10-12'] as const) {
   test(`decision log opens and closes without changing the challenge for ${age}`, async ({ page }) => {
     await enterDirectory(page, age);
-    await page.locator('[data-chapter="survival"]').click();
+    await openMission(page, 'survival');
     await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
     await page.getByRole('button', { name: 'Choose Haworth', exact: true }).click();
     await page.getByRole('button', { name: 'Begin Into the dark' }).click();
@@ -353,7 +354,7 @@ for (const age of ['7-9', '10-12'] as const) {
   test(`Into the dark plays six days and reaches the debrief for age ${age}`, async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('junior-astronaut-chapter5-progress-v1', 'complete'));
     await enterDirectory(page, age);
-    await page.locator('[data-chapter="survival"]').click();
+    await openMission(page, 'survival');
     await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
     await page.getByRole('button', { name: 'Choose Haworth', exact: true }).click();
     await page.getByRole('button', { name: 'Begin Into the dark' }).click();
@@ -390,7 +391,7 @@ for (const age of ['7-9', '10-12'] as const) {
 
   test(`Into the dark safely ends and retries from day 5 for age ${age}`, async ({ page }) => {
     await enterDirectory(page, age);
-    await page.locator('[data-chapter="survival"]').click();
+    await openMission(page, 'survival');
     await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
     await page.getByRole('button', { name: 'Choose Haworth', exact: true }).click();
     await page.getByRole('button', { name: 'Begin Into the dark' }).click();
@@ -451,7 +452,7 @@ for (const age of ['7-9', '10-12'] as const) {
 
   test(`site choice and both routes work for age ${age}`, async ({ page }) => {
     await enterDirectory(page, age);
-    await page.locator('[data-chapter="survival"]').click();
+    await openMission(page, 'survival');
     await page.getByRole('button', { name: 'Near the equator', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Why look beyond the equator?' })).toBeVisible();
     for (const fact of [power.equatorNight, power.nightCold, power.batteriesForNight]) {
@@ -472,7 +473,7 @@ for (const age of ['7-9', '10-12'] as const) {
 
     await page.getByRole('button', { name: 'All missions' }).click();
     await expect(page.locator('#survival-site')).toHaveCount(0);
-    await page.locator('[data-chapter="survival"]').click();
+    await openMission(page, 'survival');
     await expect(page.getByRole('heading', { name: 'Where will you train?' })).toBeVisible();
     await expect(south).not.toHaveAttribute('data-recommended', 'true');
     await south.click();
@@ -482,7 +483,7 @@ for (const age of ['7-9', '10-12'] as const) {
 
   test(`each south pole region reaches challenge selection for age ${age}`, async ({ page }) => {
     await enterDirectory(page, age);
-    await page.locator('[data-chapter="survival"]').click();
+    await openMission(page, 'survival');
     await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
     await expect(page.getByText('Check before using: no final landing site has been chosen.')).toBeVisible();
     await expect(page.locator('.survival-light-note')).toContainText('Every region uses the same light pattern');
@@ -509,7 +510,7 @@ for (const age of ['7-9', '10-12'] as const) {
       await expect(card.getByRole('button')).toHaveAttribute('aria-pressed', 'true');
     }
     await page.getByRole('button', { name: 'All missions' }).click();
-    await page.locator('[data-chapter="survival"]').click();
+    await openMission(page, 'survival');
     await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
     await expect(page.locator('.survival-region-card button[aria-pressed="true"]')).toHaveCount(0);
   });

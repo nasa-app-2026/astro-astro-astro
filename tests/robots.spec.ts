@@ -1,10 +1,11 @@
+import { openMission } from './helpers/onboarding';
 import { expect, test } from '@playwright/test';
 import { enterDirectory } from './helpers/onboarding';
 
 test('choose a lunar site, pilot the cargo rocket with natural arrow directions, and return home', async ({ page }) => {
   test.setTimeout(60_000);
   await enterDirectory(page);
-  await page.locator('[data-chapter="robots"]').click();
+  await openMission(page, 'robots');
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'robots');
   await expect(page.locator('#rover-action-dock')).toBeInViewport();
   await expect(page.getByRole('button', { name: /select shadowed crater/i })).toBeVisible();

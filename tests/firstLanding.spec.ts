@@ -1,3 +1,4 @@
+import { openMission as openChapterMission } from './helpers/onboarding';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
@@ -10,7 +11,7 @@ async function enterFirstLandingDirectory(page: Page): Promise<void> {
 test('First landing controls the descent, starts an astronaut EVA, and allows a return to the directory', async ({ page }) => {
   test.setTimeout(90_000);
   await enterFirstLandingDirectory(page);
-  await page.locator('[data-chapter="firstLanding"]').click();
+  await openChapterMission(page, 'firstLanding');
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'firstLanding');
   await expect(page.locator('#chapter-view')).toBeVisible();
 
@@ -84,7 +85,7 @@ test('First landing resets its mission state after leaving and reopening', async
   await enterFirstLandingDirectory(page);
   const canvas = page.locator('#game-container canvas');
   const openMission = async () => {
-    await page.locator('[data-chapter="firstLanding"]').click();
+    await openChapterMission(page, 'firstLanding');
     await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'firstLanding');
     await expect(page.locator('#chapter-label')).toContainText('First landing');
     await expect(canvas).toHaveAttribute('data-first-landing-phase', 'intro');

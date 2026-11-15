@@ -34,12 +34,14 @@ function boot(): void {
       <main id="home" hidden>
         <section class="missions" id="missions" aria-labelledby="missions-title"><div class="section-heading"><div><p class="eyebrow">BUILD A HOME ON THE MOON</p><h1 id="missions-title">Pick your next mission</h1></div><p>Start anywhere. Every mission is open.</p></div><div class="chapter-grid" id="chapter-grid"></div></section>
       </main>
+      <main id="mission-info" hidden aria-labelledby="info-title"></main>
       <main id="chapter-view" hidden><div class="chapter-toolbar"><button id="back-button" type="button">← All missions</button><span id="chapter-label"></span></div></main>
     </div>`;
 
   const splashScreen = app.querySelector<HTMLElement>('#splash-screen')!;
   const ageScreen = app.querySelector<HTMLElement>('#age-screen')!;
   const home = app.querySelector<HTMLElement>('#home')!;
+  const infoView = app.querySelector<HTMLElement>('#mission-info')!;
   const chapterView = app.querySelector<HTMLElement>('#chapter-view')!;
   const chapterLabel = app.querySelector<HTMLElement>('#chapter-label')!;
   const grid = app.querySelector<HTMLElement>('#chapter-grid')!;
@@ -78,7 +80,7 @@ function boot(): void {
 
   function renderDirectory(): void {
     grid.replaceChildren(...missionDirectory(chapters).map((entry) => {
-      const button = chapterButton(entry.chapter, entry.accessibleName, open);
+      const button = chapterButton(entry.chapter, entry.accessibleName, showInfo);
       button.disabled = !ready;
       return button;
     }));
@@ -91,6 +93,7 @@ function boot(): void {
   }
 
   function open(chapter: ChapterInfo): void {
+    infoView.hidden = true;
     leaveCurrentScene();
     const lockMissionScroll = chapter.stage === 'Exploration' || chapter.stage === 'Establishing a presence';
     document.documentElement.classList.toggle('mission-no-scroll', lockMissionScroll);
@@ -103,6 +106,34 @@ function boot(): void {
     window.scrollTo(0, 0);
   }
 
+  function showInfo(chapter: ChapterInfo): void {
+    leaveCurrentScene();
+    document.documentElement.classList.remove('mission-no-scroll');
+    document.body.classList.remove('mission-no-scroll');
+    const story = chapter.story.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
+    const focus = chapter.focus.map((item) => `<span class="info-focus-chip">${escapeHtml(item)}</span>`).join('');
+    infoView.innerHTML = `<div class="info-shell"><button class="info-back" type="button">← All missions</button><section class="info-card"><p class="eyebrow">MISSION BRIEFING</p><h1 id="info-title">${escapeHtml(chapter.title)}</h1><p class="info-lead">${escapeHtml(chapter.briefing)}</p><div class="info-grid"><section class="info-story"><h2>What you should know</h2><ul>${story}</ul></section><aside class="info-challenge"><span class="info-orbit" aria-hidden="true">◉</span><p class="info-kicker">YOUR CHALLENGE</p><p>${escapeHtml(chapter.challenge)}</p><div class="info-focus">${focus}</div></aside></div></section><div class="info-actions"><span>Ready to take command?</span><button class="info-continue" type="button">Continue to mission <span aria-hidden="true">→</span></button></div></div>`;
+    infoView.querySelector('.info-back')!.addEventListener('click', returnToDirectory);
+    infoView.querySelector('.info-continue')!.addEventListener('click', () => open(chapter));
+    home.hidden = true;
+    chapterView.hidden = true;
+    infoView.hidden = false;
+    app.dataset.screen = 'info';
+    window.scrollTo(0, 0);
+  }
+
+  function returnToDirectory(): void {
+    game.scene.start('menu');
+    infoView.hidden = true;
+    home.hidden = false;
+    app.dataset.screen = 'home';
+    renderDirectory();
+  }
+
+  function escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]!);
+  }
+
   renderDirectory();
   app.querySelector<HTMLButtonElement>('#back-button')!.addEventListener('click', () => {
     leaveCurrentScene();
@@ -110,9 +141,7 @@ function boot(): void {
     document.documentElement.classList.remove('mission-no-scroll');
     document.body.classList.remove('mission-no-scroll');
     chapterView.hidden = true;
-    home.hidden = false;
-    app.dataset.screen = 'home';
-    renderDirectory();
+    returnToDirectory();
   });
 
   game.events.once('ready', () => {

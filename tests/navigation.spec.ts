@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { enterDirectory } from './helpers/onboarding';
+import { enterDirectory, openMission } from './helpers/onboarding';
 
 const missions = [
   ['flyby', 'Flyby test'], ['robots', 'Robots go first'],
@@ -7,7 +7,7 @@ const missions = [
   ['survival', 'Survival'], ['expansion', 'Expansion'],
 ] as const;
 
-test('all six implemented missions open directly and return to the directory', async ({ page }) => {
+test('all six missions show an unnumbered briefing, continue into gameplay, and return to the directory', async ({ page }) => {
   test.setTimeout(60_000);
   await enterDirectory(page);
   await expect(page.getByRole('heading', { name: /pick your next mission/i })).toBeVisible();
@@ -18,6 +18,13 @@ test('all six implemented missions open directly and return to the directory', a
     const card = page.locator(`[data-chapter="${id}"]`);
     await expect(card).toBeEnabled();
     await card.click();
+    await expect(page.locator('#mission-info')).toBeVisible();
+    await expect(page.locator('#info-title')).toHaveText(title);
+    expect(await page.locator('.info-story li').count()).toBeGreaterThan(1);
+    await expect(page.locator('#mission-info')).not.toContainText(/chapter\s*\d+|stage\s*\d+/i);
+    await expect(page.locator('#app')).toHaveAttribute('data-screen', 'info');
+    await expect(page.locator('#app')).not.toHaveAttribute('data-active-scene', id);
+    await page.getByRole('button', { name: /continue to mission/i }).click();
     await expect(page.locator('#chapter-view')).toBeVisible();
     await expect(page.locator('#chapter-label')).toContainText(title);
     await expect(page.locator('#app')).toHaveAttribute('data-active-scene', id);
@@ -31,10 +38,21 @@ test('all six implemented missions open directly and return to the directory', a
   }
 });
 
+test('briefing back control returns to the open directory without starting a mission', async ({ page }) => {
+  await enterDirectory(page);
+  await page.locator('[data-chapter="robots"]').click();
+  await expect(page.locator('#mission-info')).toBeVisible();
+  await page.getByRole('button', { name: 'All missions' }).click();
+  await expect(page.locator('#home')).toBeVisible();
+  await expect(page.locator('#mission-info')).toBeHidden();
+  await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
+  await expect(page.locator('[data-chapter="robots"]')).toBeEnabled();
+});
+
 test('scrolling is locked only while stage one and two missions are open', async ({ page }) => {
   await enterDirectory(page);
   for (const [id, locked] of [['flyby', true], ['robots', true], ['survival', false]] as const) {
-    await page.locator(`[data-chapter="${id}"]`).click();
+    await openMission(page, id);
     if (locked) await expect(page.locator('html')).toHaveClass(/mission-no-scroll/);
     else await expect(page.locator('html')).not.toHaveClass(/mission-no-scroll/);
     await page.getByRole('button', { name: 'All missions' }).click();
@@ -56,7 +74,7 @@ test('directory cards are visible on launch and chapters receive the full viewpo
   }));
   expect(directoryFits).toBe(true);
 
-  await page.locator('[data-chapter="survival"]').click();
+  await openMission(page, 'survival');
   await expect(page.locator('.topbar')).toBeHidden();
   const layout = await page.locator('#chapter-view').evaluate((view) => ({
     top: view.getBoundingClientRect().top,
@@ -90,20 +108,20 @@ test('directory cards are visible on launch and chapters receive the full viewpo
 
 test('switching missions removes the previous chapter and starts the next one fresh', async ({ page }) => {
   await enterDirectory(page);
-  await page.locator('[data-chapter="flyby"]').click();
+  await openMission(page, 'flyby');
   const flyby = page.getByRole('region', { name: 'Moon flyby mission control' });
   await expect(flyby).toBeVisible();
   await flyby.getByRole('button', { name: 'Launch the survey rocket' }).click();
   await page.getByRole('button', { name: 'All missions' }).click();
   await expect(flyby).toHaveCount(0);
 
-  await page.locator('[data-chapter="robots"]').click();
+  await openMission(page, 'robots');
   await expect(page.getByRole('region', { name: 'Lunar rover mission control' })).toBeVisible();
   await expect(flyby).toHaveCount(0);
   await expect(page.locator('#chapter-view > :not(.chapter-toolbar)')).toHaveCount(1);
   await page.getByRole('button', { name: 'All missions' }).click();
 
-  await page.locator('[data-chapter="flyby"]').click();
+  await openMission(page, 'flyby');
   await expect(flyby.getByRole('button', { name: 'Launch the survey rocket' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Lunar rover mission control' })).toHaveCount(0);
 });

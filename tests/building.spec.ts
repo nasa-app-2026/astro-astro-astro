@@ -1,3 +1,4 @@
+import { openMission } from './helpers/onboarding';
 import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
@@ -48,7 +49,7 @@ async function steerIntoRange(
 test('operate the crane and excavator to build the outpost, then return to missions', async ({ page }) => {
   test.setTimeout(90_000);
   await enterDirectory(page);
-  await page.locator('[data-chapter="building"]').click();
+  await openMission(page, 'building');
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'building');
   await expect(page.locator('[data-mission-panel="building"]')).toBeVisible();
   await expect(page.locator('#game-container canvas')).toHaveAttribute('data-building-background', 'earth');

@@ -1,10 +1,11 @@
+import { openMission } from './helpers/onboarding';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 type CanvasBounds = { x: number; y: number; width: number; height: number };
 
 async function openExpansion(page: Page) {
   await page.goto('/');
-  await page.locator('[data-chapter="expansion"]').click();
+  await openMission(page, 'expansion');
 
   const canvas = page.locator('#game-container canvas');
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'expansion');
@@ -184,7 +185,7 @@ test('Expansion can trigger a random flare during cargo pickup and resume collec
 
 test('Expansion order terminal and confirmation are keyboard accessible', async ({ page }) => {
   await page.goto('/');
-  await page.locator('[data-chapter="expansion"]').click();
+  await openMission(page, 'expansion');
 
   const canvas = page.locator('#game-container canvas');
   await expect(canvas).toHaveAttribute('data-expansion-phase', 'intro');

@@ -18,4 +18,14 @@ describe('chapter catalog', () => {
     }
     expect(new Set(chapters.flatMap((chapter) => chapter.focus))).toEqual(areas);
   });
+
+  it('provides player-facing, unnumbered briefings for every playable mission', () => {
+    for (const chapter of chapters) {
+      expect(chapter.briefing.length).toBeGreaterThan(30);
+      expect(chapter.story.length).toBeGreaterThanOrEqual(2);
+      expect(chapter.story.every((fact) => fact.length > 30)).toBe(true);
+      expect(chapter.challenge.length).toBeGreaterThan(30);
+      expect(`${chapter.briefing} ${chapter.story.join(' ')} ${chapter.challenge}`).not.toMatch(/chapter\s*\d+|stage\s*\d+/i);
+    }
+  });
 });

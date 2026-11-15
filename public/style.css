@@ -12,6 +12,7 @@
 .chapter-stage{margin:5px 0 12px}.chapter-card strong{font-size:clamp(17px,1.8vw,22px)}
 .chapter-summary{font-size:13px;margin:7px 0 10px}.chapter-focus{padding-top:9px}
 #app:has(#chapter-view:not([hidden])) .topbar{display:none}
+#app:has(#mission-info:not([hidden])) .topbar{display:none}
 #chapter-view{display:flow-root;position:relative;min-height:100vh;min-height:100dvh;background:transparent}
 .chapter-toolbar{position:fixed;top:8px;right:8px;z-index:20;display:flex;gap:8px;align-items:center;width:auto;max-width:calc(100vw - 16px);padding:4px;background:#081427dc;border:1px solid #3a6480;border-radius:8px;backdrop-filter:blur(10px)}
 .chapter-toolbar button{padding:7px 10px;white-space:nowrap;font-size:12px}
@@ -41,3 +42,27 @@
 #chapter-view .chapter-toolbar{top:8px;left:8px;right:8px;width:auto;max-width:none;justify-content:space-between;padding:0;background:transparent;border:0;backdrop-filter:none;pointer-events:none}
 #chapter-view .chapter-toolbar button,#chapter-view .chapter-toolbar span{pointer-events:auto}
 #chapter-view .chapter-toolbar span{padding:8px;background:#081427dc;border:1px solid #3a6480;border-radius:6px}
+
+/* Chapter briefings bridge the directory and each playable mission. */
+#mission-info{min-height:100vh;min-height:100dvh;padding:clamp(16px,4vh,42px) clamp(16px,5vw,72px) 32px;background:radial-gradient(ellipse at 50% 0%,#23425b 0%,#0b1b2d 62%)}
+.info-shell{width:min(100%,1020px);min-height:calc(100vh - 74px);min-height:calc(100dvh - 74px);margin:0 auto;display:flex;flex-direction:column}
+.info-back{align-self:flex-start;margin-bottom:clamp(16px,4vh,36px);padding:10px 14px;color:#ecffff;background:#102840;border:1px solid #56849a;border-radius:7px;font-weight:700}
+.info-card{padding:clamp(22px,4vw,48px);border:1px solid #56849a;border-radius:18px;background:linear-gradient(145deg,#102840f5,#0c2035f5);box-shadow:0 24px 70px #0005}
+.info-card .eyebrow{margin-bottom:12px}
+.info-card h1{max-width:760px;margin:0;font-size:clamp(36px,6vw,68px);line-height:1;letter-spacing:-.055em}
+.info-lead{max-width:760px;margin:18px 0 28px;color:#c9e2eb;font-size:clamp(17px,2.2vw,22px);line-height:1.5}
+.info-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(220px,.8fr);gap:clamp(20px,4vw,46px);padding-top:24px;border-top:1px solid #ffffff25}
+.info-story h2{margin:0 0 14px;font-size:17px;color:#91eee1}
+.info-story ul{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.info-story li{position:relative;padding-left:20px;color:#d0deea;font-size:15px;line-height:1.55}
+.info-story li::before{position:absolute;left:0;color:#82e9dc;content:'✦'}
+.info-challenge{position:relative;overflow:hidden;padding:22px;border:1px solid #3a6b7d;border-radius:14px;background:linear-gradient(150deg,#164056,#10283b)}
+.info-orbit{position:absolute;top:-25px;right:12px;color:#89eadd40;font-size:88px}
+.info-kicker{position:relative;margin:34px 0 8px;color:#8ce9db;font-size:11px;font-weight:800;letter-spacing:.18em}
+.info-challenge>p:not(.info-kicker){position:relative;margin:0;color:white;font-size:18px;line-height:1.5}
+.info-focus{display:flex;flex-wrap:wrap;gap:7px;margin-top:20px}
+.info-focus-chip{padding:6px 9px;border:1px solid #ffffff35;border-radius:999px;color:#d2f8f2;font-size:11px}
+.info-actions{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:auto;padding-top:24px;color:#abc3d1}
+.info-continue{display:flex;align-items:center;gap:28px;padding:14px 20px;border:0;border-radius:8px;background:#8ce9db;color:#082237;font-weight:800}
+.info-continue:hover{background:#c4fff5}
+@media(max-width:700px){#mission-info{padding:12px 12px 20px}.info-shell{min-height:calc(100dvh - 32px)}.info-back{margin-bottom:12px;padding:8px 11px}.info-card{padding:20px 17px}.info-lead{margin:14px 0 20px}.info-grid{grid-template-columns:1fr;gap:18px;padding-top:18px}.info-story ul{gap:9px}.info-story li{font-size:14px}.info-challenge{padding:16px}.info-kicker{margin-top:24px}.info-actions{padding-top:16px;font-size:13px}.info-continue{gap:12px;padding:13px 14px}}
