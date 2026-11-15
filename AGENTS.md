@@ -8,6 +8,8 @@ For a chapter assignment, use the ownership table and contribution steps in the 
 
 Whenever you add or change code, add or update meaningful unit tests and Playwright integration tests that run in Chromium. Run `npm run test` before considering the change complete. Test player-visible behavior and real scene transitions; avoid tests that only repeat implementation text.
 
+The sourced fact catalog lives in `src/facts/`. Import from `src/facts/index.ts` or a specific fact file using a relative path from your chapter. Keep source attribution visible to players when a chapter uses real data.
+
 ## Player inputs
 
 The splash screen leads to an age selection screen before the mission directory. Player inputs for the current game session live in `src/playerProfile.ts`. A chapter that needs the selected age imports `getPlayerProfile()` and reads `getPlayerProfile().ageRange`, which is `'7-9'` or `'10-12'` after onboarding. The value is `null` until the player submits the age screen; handle that case if code can run earlier. When adding another player input later, extend `PlayerProfile` and its setter in that module, then collect it in the shared onboarding flow in `src/main.ts`. Keep chapter-specific copies of player inputs out of individual scene modules.

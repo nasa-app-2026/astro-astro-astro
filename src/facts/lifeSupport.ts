@@ -135,7 +135,8 @@ export const lifeSupport = {
     label: "known",
     sources: ["SRC-R04-36"],
     credit: "NASA",
-    young: "☀️ In 2026 NASA used concentrated sunlight to heat simulated Moon soil and make carbon monoxide, which can be turned into oxygen. It was a test on Earth, not on the Moon."
+    young: "☀️ In 2026 NASA used concentrated sunlight to heat simulated Moon soil and make carbon monoxide, which can be turned into oxygen. It was a test on Earth, not on the Moon.",
+    older: "In 2026 NASA tested a sunlight-powered process on simulated lunar soil on Earth; the resulting carbon monoxide could be processed further to produce oxygen. This was not a Moon-surface demonstration."
   },
   suitsSpaceship: {
     id: "lifeSupport.suitsSpaceship",
@@ -152,7 +153,8 @@ export const lifeSupport = {
     label: "plan",
     sources: ["SRC-R05-25"],
     credit: "NASA Apollo",
-    young: "🔋 Apollo's backpack lasted about 7 hours of oxygen (approximate). When the cooling water ran out, the moonwalk had to end."
+    young: "🔋 Apollo's backpack lasted about 7 hours of oxygen (approximate). When the cooling water ran out, the moonwalk had to end.",
+    older: "Apollo's portable life-support backpack was designed for roughly seven hours of oxygen; cooling water also limited moonwalk duration."
   },
   axeHours: {
     id: "lifeSupport.axeHours",
