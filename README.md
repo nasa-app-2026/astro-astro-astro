@@ -21,7 +21,7 @@ In other shells, use `npm` in place of `npm.cmd`.
 - `data/challenge.md` — challenge requirements.
 - `data/chapter.md` — seven mission outlines across five stages.
 - `data/recources.md` — resource and decision design notes.
-- `facts/` — sourced lunar and mission facts, available for future gameplay.
+- `src/facts/` — sourced lunar and mission facts, available for future gameplay.
 - `media-ts/` and `assets/` — media catalog and local source files.
 - `src/main.ts` — browser shell, mission directory, and navigation.
 - `src/game/main.ts` — Phaser game configuration and scene registration.

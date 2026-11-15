@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { enterDirectory } from './helpers/onboarding';
 
 const missions = [
   ['flyby', 'Flyby test'], ['robots', 'Robots go first'],
@@ -9,8 +10,8 @@ const missions = [
 
 test('all seven missions open directly and return to the directory', async ({ page }) => {
   test.setTimeout(60_000);
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: /build a home/i })).toBeVisible();
+  await enterDirectory(page);
+  await expect(page.getByRole('heading', { name: /pick your next mission/i })).toBeVisible();
   await expect(page.locator('#game-container canvas')).toBeVisible();
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'menu');
 
@@ -52,9 +53,69 @@ test('scrolling is locked only for stage one and two missions', async ({ page })
   }
 });
 
+test('directory cards are visible on launch and chapters receive the full viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await enterDirectory(page);
+  const cards = page.locator('.chapter-card');
+  await expect(cards).toHaveCount(7);
+  await expect(cards.first()).toHaveAttribute('data-chapter', 'survival');
+  await expect(page.locator('.chapter-number')).toHaveCount(0);
+  await expect(cards.first()).toBeEnabled();
+  const directoryFits = await cards.evaluateAll((items) => items.every((item) => {
+    const box = item.getBoundingClientRect();
+    return box.top >= 0 && box.bottom <= window.innerHeight;
+  }));
+  expect(directoryFits).toBe(true);
+
+  await page.locator('[data-chapter="survival"]').click();
+  await expect(page.locator('.topbar')).toBeHidden();
+  const layout = await page.locator('#chapter-view').evaluate((view) => ({
+    top: view.getBoundingClientRect().top,
+    height: view.getBoundingClientRect().height,
+    viewport: window.innerHeight,
+    backHeight: view.querySelector('.chapter-toolbar')!.getBoundingClientRect().height,
+  }));
+  expect(layout.top).toBe(0);
+  expect(layout.height).toBeGreaterThanOrEqual(layout.viewport);
+  expect(layout.backHeight).toBeLessThan(60);
+  const backButton = await page.getByRole('button', { name: 'All missions' }).boundingBox();
+  const chapterLabel = await page.locator('#chapter-label').boundingBox();
+  expect(backButton).not.toBeNull();
+  expect(chapterLabel).not.toBeNull();
+  expect(backButton!.x).toBeLessThan(30);
+  expect(backButton!.y).toBeLessThan(30);
+  expect(chapterLabel!.x).toBeGreaterThan(backButton!.x + backButton!.width);
+  await expect(page.locator('#chapter-view > :not(.chapter-toolbar)')).toHaveCount(0);
+  await page.getByRole('button', { name: 'All missions' }).click();
+  await expect(cards).toHaveCount(7);
+});
+
+test('switching missions removes the previous chapter and starts the next one fresh', async ({ page }) => {
+  await enterDirectory(page);
+  await page.locator('[data-chapter="flyby"]').click();
+  const flyby = page.getByRole('region', { name: 'Moon flyby mission control' });
+  await expect(flyby).toBeVisible();
+  await flyby.getByRole('button', { name: 'Launch the survey rocket' }).click();
+  await page.getByRole('button', { name: 'All missions' }).click();
+  await expect(flyby).toHaveCount(0);
+
+  await page.locator('[data-chapter="robots"]').click();
+  await expect(page.getByRole('region', { name: 'Lunar rover mission control' })).toBeVisible();
+  await expect(flyby).toHaveCount(0);
+  await expect(page.locator('#chapter-view > :not(.chapter-toolbar)')).toHaveCount(1);
+  await page.getByRole('button', { name: 'All missions' }).click();
+
+  await page.locator('[data-chapter="flyby"]').click();
+  await expect(flyby.getByRole('button', { name: 'Launch the survey rocket' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Lunar rover mission control' })).toHaveCount(0);
+});
+
 test('mission directory works at a narrow viewport with keyboard access', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/');
+  await enterDirectory(page);
+  const cards = page.locator('.chapter-card');
+  await expect(cards).toHaveCount(7);
+  expect(await cards.evaluateAll((items) => items.every((item) => item.getBoundingClientRect().bottom <= window.innerHeight))).toBe(true);
   await page.locator('[data-chapter="sustainability"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#app')).toHaveAttribute('data-active-scene', 'sustainability');

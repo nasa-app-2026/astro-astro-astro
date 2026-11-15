@@ -1,9 +1,10 @@
-export type FactLabel = 'measured' | 'rule' | 'estimate' | 'plan' | 'one-study' | 'known';
+export type FactLabel = 'measured' | 'rule' | 'estimate' | 'assumption' | 'plan' | 'one-study' | 'known';
 
 export const LABEL_WORDS: Record<FactLabel, string> = {
   measured: '📏 Measured',
   rule: '📜 NASA rule',
   estimate: "🧪 Scientists' estimate",
+  assumption: '🧭 Model assumption',
   plan: '📝 Plan (can change)',
   'one-study': '🔬 One study',
   known: '✅ Known fact',
