@@ -2,7 +2,7 @@ import { allImages, allSounds } from '../../media-ts';
 import { chapter5Data } from '../data/chapter5/data-screen';
 import { chapters } from '../game/chapters/catalog';
 import { GROUP_WORDS, getSource, mediaSourceKey, sources, textSources } from '../facts/sources';
-import { NASA_WHY_USED_PLACEHOLDER } from './whyUsedPlaceholders';
+import { NASA_WHY_USED_BY_SOURCE } from './whyUsedBySource';
 import type { DataSourcesInput, LocalMediaKind } from './model';
 
 const imageFiles = Object.keys(import.meta.glob('../../assets/images/**/*'));
@@ -34,6 +34,6 @@ export function createDataSourcesInput(): DataSourcesInput {
     groupWords: GROUP_WORDS,
     mediaFiles: [...localFiles(imageFiles, 'image'), ...localFiles(audioFiles, 'audio')],
     mediaCredits,
-    whyUsedPlaceholder: NASA_WHY_USED_PLACEHOLDER,
+    whyUsedBySource: NASA_WHY_USED_BY_SOURCE,
   };
 }

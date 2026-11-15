@@ -26,7 +26,7 @@ export interface DataSourcesInput {
   readonly groupWords: Readonly<Record<SourceGroup, string>>;
   readonly mediaFiles: readonly LocalMediaFile[];
   readonly mediaCredits: readonly MediaCreditRecord[];
-  readonly whyUsedPlaceholder: string;
+  readonly whyUsedBySource: Readonly<Record<string, string>>;
 }
 
 export type AllSourcesRow =
@@ -85,7 +85,7 @@ export function buildDataSourcesModel(input: DataSourcesInput, filter: ChapterFi
     .filter((source) => source.group === 'nasaChallengeResource')
     .map((source) => ({
       ...source,
-      whyUsed: input.whyUsedPlaceholder,
+      whyUsed: input.whyUsedBySource[source.key] ?? '',
       archivedNotLive: source.key === 'SRC-006',
     }));
 
