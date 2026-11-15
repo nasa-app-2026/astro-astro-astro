@@ -1,4 +1,5 @@
 import { power } from '../../facts/power';
+import { radiation } from '../../facts/radiation';
 
 // Unit conversion: one Earth day contains 24 hours.
 export const hoursPerDay = 24;
@@ -22,5 +23,38 @@ export const settings = Object.freeze({
   labScienceGain: 1, // Game rule, made up for fun — points
   moonwalkScienceGain: 2, // Game rule, made up for fun — points
   oxygenChoices: [0, 1, 2], // Game rule, made up for fun — kg
-  quietDosePerDay: 0.9, // Game rule, made up for fun — mSv/day; unsourced training assumption
+  quietDosePerDay: radiation.doseQuietSun.value, // Catalog estimate, mSv/day; previously an unsourced training assumption.
+  // Game estimate, made up for fun: there is no official way to turn a storm's S level into a dose on the Moon.
+  stormDose: { S1: 5, S2: 20, S3: 80, S4: 300 },
+  shelterDoseFraction: 0.5, // Game rule, made up for fun — inspired by radiation.shelterMass
+  protectedRoomDoseFraction: 0.9, // Game rule, made up for fun
+  walkBackDoseFraction: 0.1, // Game rule, made up for fun
+  moutonWalkBackDoseFraction: 0.2, // Game rule, made up for fun — longer walk back
+  extraKitScience: 1, // Game rule, made up for fun — point per lab day
+  stormChallengeSeed: 42, // Game rule, made up for fun — reproducible training schedule
+  contactDefault: [1, 2, 4, 6], // Game rule, made up for fun — example days
+  contactMalpert: [1, 2, 3, 4, 6], // Game rule, made up for fun — not a NASA measurement
+  contactNobile: [2, 6], // Game rule, made up for fun — one-third example
+  sendDataCost: 4, // Game rule, made up for fun — kWh
+  relayBookingCost: 8, // Game rule, made up for fun — kWh
+  contactDataPerLab: 1, // Game rule, made up for fun — point
+  contactStartingEnergy: 160, // Game rule, made up for fun — kWh for the communication challenge
+  plantArea: 0.5, // Game rule, made up for fun — square metres
+  lampHours: 12, // Game rule, made up for fun — hours per lamp day
+  plantWaterRecovery: 0.9, // Game rule, made up for fun — fraction collected
+  foodStartingSupply: 14.35, // Game rule, made up for fun — kg
+  foodDeliveryAmount: 10, // Game rule, made up for fun — kg
+  foodExpectedDeliveryDay: 4, // Game rule, made up for fun — expected mission day
+  foodDeliveryDelay: 1, // Game rule, made up for fun — day
+  foodStartingEnergy: 200, // Game rule, made up for fun — kWh
+  foodStartingWater: 5, // Game rule, made up for fun — litres
+  experimentLampDays: 3, // Game rule, made up for fun — lamp days
+  experimentScience: 3, // Game rule, made up for fun — points
+  iceStartingAir: 4.8, // Game rule, made up for fun — kg oxygen
+  iceStartingEnergy: 200, // Game rule, made up for fun — kWh
+  icePerDig: 6.6, // Game rule, made up for fun — kg ice
+  haworthIceMultiplier: 1.5, // Game rule, made up for fun — ice per dig
+  waterPerOxygen: 1.1, // Game rule, made up for fun — kg water per kg oxygen, approximate chemistry
+  oxygenPerSplit: 3, // Game rule, made up for fun — kg oxygen per action
+  iceMeltCost: 5, // Game rule, made up for fun — kWh per batch
 });

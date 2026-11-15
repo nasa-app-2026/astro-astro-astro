@@ -9,6 +9,8 @@ import { missions } from './missions';
 
 export type { Fact, FactLabel } from './types';
 export { LABEL_WORDS } from './types';
+export { sources, getSource, GROUP_WORDS, mediaSourceKey, textFacts, textSources } from './sources';
+export type { Source, SourceGroup, SourceChecked } from './sources';
 
 export { 
   radiation, 

@@ -10,7 +10,8 @@ import { missions } from '../../facts/missions';
  * Verified P0 dependencies, indexed by their existing catalog IDs.
  * Preserve the original fact objects, units, wording, labels and source keys.
  * Missing IDs remain unresolved in docs/chapter5-plan.md; no aliases or
- * replacement values are supplied here. Source details await sources.ts.
+ * replacement values are supplied here. Source details are available from
+ * the separately supplied registry in ../../facts/sources.
  */
 export const chapter5Facts = Object.freeze({
   [missions.im2Tipped.id]: missions.im2Tipped,
@@ -24,15 +25,25 @@ export const chapter5Facts = Object.freeze({
   [power.darkSpells.id]: power.darkSpells,
   [power.emptyBaseHeating.id]: power.emptyBaseHeating,
   [lifeSupport.oxygenPerDay.id]: lifeSupport.oxygenPerDay,
+  [lifeSupport.splitWater.id]: lifeSupport.splitWater,
   [lifeSupport.oxygenEnergyModel.id]: lifeSupport.oxygenEnergyModel,
   [lifeSupport.oxygenEnergyMinimum.id]: lifeSupport.oxygenEnergyMinimum,
   [radiation.careerLimit.id]: radiation.careerLimit,
+  [radiation.stormLimit.id]: radiation.stormLimit,
+  [radiation.waterBlanket.id]: radiation.waterBlanket,
+  [radiation.doseBusySun.id]: radiation.doseBusySun,
+  [radiation.doseQuietSun.id]: radiation.doseQuietSun,
   [moonPlaces.nineRegions.id]: moonPlaces.nineRegions,
   [moonPlaces.haworth.id]: moonPlaces.haworth,
   [moonPlaces.monsMouton.id]: moonPlaces.monsMouton,
   [moonPlaces.iceFriendlyGround.id]: moonPlaces.iceFriendlyGround,
+  [moonPlaces.iceUses.id]: moonPlaces.iceUses,
   [communication.relaySatellites.id]: communication.relaySatellites,
+  [communication.poleHillsBlock.id]: communication.poleHillsBlock,
+  [communication.radioDelay.id]: communication.radioDelay,
   [food.packedFoodPerDay.id]: food.packedFoodPerDay,
+  [food.allFoodFromEarth.id]: food.allFoodFromEarth,
+  [food.gramsPerKwh.id]: food.gramsPerKwh,
   [food.plantPower.id]: food.plantPower,
   [food.plantWater.id]: food.plantWater,
   [food.veggie.id]: food.veggie,

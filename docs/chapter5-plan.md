@@ -2,6 +2,8 @@
 
 ## Context
 
+Source registry update: the user supplied a generated source-list snapshot. Its 154 ranked sources are available through `src/facts/sources.ts`, with the requested four part files. `docs/knowledge/sources-list.md` preserves the supplied snapshot and `node scripts/generate-source-catalog.mjs` rebuilds the TypeScript catalog. The registry also exposes the supplied media and team text mappings. Some existing fact source keys do not occur in the supplied list; no replacement keys have been inferred. Existing P8 source-title presentation is not yet connected to this registry.
+
 P0 audit date: 15 November 2026. P0 created only this document. The user subsequently authorized P1 using verified fact IDs only, leaving missing IDs unresolved, and creation of `src/data/chapter5/facts.ts`. Status: **P5 implemented** for the user's replacement Into the dark prompt. P6 and later steps have not run.
 
 Confirmed media locations are `media-ts/` for metadata and `assets/` for media files. No move is needed. The user will provide `sources.ts` later; P1 preserves existing source keys without resolving source titles or URLs.
@@ -239,12 +241,25 @@ P1 clarifications now recorded: use the 15 verified exact IDs only; create `src/
 - [x] P5: Into the dark implemented. Typecheck and all 50 unit tests pass. All Survival Chromium tests pass in both age modes. Three full `npm run test` runs each had 22 of 23 Chromium tests pass: first an unrelated Flyby timer assertion, then twice an unrelated First Landing descent timeout. The full check is not yet green. The 0.9 mSv/day dose is labelled as an unsourced training assumption.
 - [x] P6: decision log and delayed energy links; `npm run test` passed (51 unit tests, 25 Chromium tests).
 - [x] P7: debrief and turning-point replay implemented; `npm run test` passed (52 unit tests, 25 Chromium tests).
-- [ ] P8: source details.
-- [ ] P9: energy rules.
-- [ ] P10: challenge selection.
-- [ ] P11: space-weather data.
-- [ ] P12: radiation rules.
-- [ ] P13: communication rules.
-- [ ] P14: food challenge.
-- [ ] P15: age wording, accessibility and test access.
-- [ ] P16: final integration and attribution audit.
+- [ ] P8: NASA DONKI archive and rules implemented for May 2024 and December 2019. The NOAA archive identifies two S2 proton events by matching times and associated flares; twelve other DONKI SEP records remain unknown as authorized. Unknown levels cannot produce a dose. Zod validates the archive. Source titles await `sources.ts`; storm gauge and debrief screen remain for a later screen step because P8 requests rules only. Typecheck and 59 unit tests pass; all Survival browser tests passed on the second full run, but two unrelated Expansion tests timed out waiting for the hidden mission tile.
+- [x] P9: Storm alert planning and challenge implemented, with user-approved `radiation.watershield`, NOAA archive events, unknown-level exclusions, shelter choices, region walk-back rule and dose debrief. A simulated S4 is used only in tests. Typecheck and 65 unit tests pass; 27 of 29 Chromium tests pass, including P9; two Expansion tests timed out waiting for the hidden mission tile. Source titles await `sources.ts`.
+- [x] P10: Can you hear us implemented with region contact examples, data queue, one-use relay, contact-dependent warnings and sent-data goal. The communication challenge starts with 160 kWh so five lab days and a send can fit through the example dark days. Typecheck and 70 unit tests pass; the P10 Chromium journey passes. The full browser run has two unrelated Expansion failures caused by the hidden mission tile. Source titles await `sources.ts`.
+- [x] P11: Fresh food implemented with the approved `food.gramsPerKwh` ID, plant-box calculations, daily water recovery, one-day-late cargo and safe early endings. Typecheck and 73 unit tests pass; the P11 browser journey passes. The full run passed 28 of 31 Chromium tests; two Expansion tests and one First Landing test timed out.
+- [x] P12: Ice to air implemented with the existing ice, oxygen and Haworth facts, a six-day light example, seeded archived space-weather events and safe early endings. One split batch uses the approximate 1.1 kg water per kg oxygen training rule. Typecheck and 77 unit tests pass; 30 of 32 Chromium tests pass, including the P12 journey. The two Expansion tests time out waiting for the hidden mission tile.
+- [x] P13: sequential training, shared decision log, replay-based challenge and training debriefs, and device-local completion/replay implemented. The complete five-challenge journey passes in both age modes, including with storage writes disabled; the older-age journey verifies saved progress after reload. Typecheck and 80 unit tests pass. The full run passed 31 of 34 Chromium tests; two Expansion tests and one First Landing test timed out.
+- [x] P14: fair what-if comparisons added to debrief day cards, with one recommended comparison for younger players when a better alternative exists. Each comparison replays the original events, reports later Rest substitutions and branches from the chosen morning while retaining the original attempt. Typecheck and 86 unit tests pass; the P14 Chromium journey passed in the full run. That run passed 33 of 36 Chromium tests overall, with two Expansion timeouts and one Flyby timing failure.
+- [x] P15: age audit implemented. Displayed facts use `factText`; the younger Haworth summary avoids percentages, P5's data-driven tip is younger-only, and younger what-if comparisons use bars. P5 now reads the subsequently supplied `radiation.doseQuietSun` estimate and displays it as an age-specific catalog fact; its numeric rule is unchanged. The same choices produce the same saved state in both modes; full Chapter 5 journeys check fact wording, younger percentages, tip visibility and console errors. Longer younger text and suggested alternatives are listed in `docs/chapter5-age-audit.md` for team approval. Typecheck and 87 unit tests pass. The final full run passed 35 of 39 Chromium tests, including all Survival tests; two Expansion tests, First Landing and Flyby failed on their existing navigation or timing checks.
+- [ ] P16: data screen, balance tests and team summary implemented; full check remains blocked. Typecheck and 92 unit tests pass. Chromium on an alternate port passed 37 of 39 tests, including both full Chapter 5 journeys; two existing Expansion tests timed out. The standard check could not start its browser server because port 8080 was occupied by a test in another checkout.
+
+
+## P16 team summary
+
+- **Into the dark:** balancing energy and oxygen through sunny and dark days; uses oxygen consumption, oxygen production energy, solar/darkness and radiation facts.
+- **Storm alert:** weighs shelter against science; uses the archived DONKI flare and particle-event data for May 2024 and December 2019, NOAA levels where known, and clearly labelled estimated event doses.
+- **Can you hear us?:** shows that science must be sent to Earth, and that terrain and relay plans affect contact; uses communication and region visibility facts. A plan that sends nothing finishes safely but misses the goal, as approved.
+- **Fresh food:** shows how much energy growing plants takes and how little food they produce compared with the crew's needs; uses NASA food, energy and water estimates.
+- **Ice to air:** explores digging ice and using energy to turn water into oxygen; uses ice, water splitting and oxygen facts, plus the archived event engine.
+
+All five challenges are built; none is currently marked Coming next. The data screen derives its fact list, source credits and links from the chapter fact adapter and source catalogue, and identifies real derived settings separately from invented game settings. No Chapter 5 pictures or sounds are currently used.
+
+Balance adjustment: Fresh food starting supply changed from 15 kg to 14.35 kg. With three lamp days, the careful script survives until the delayed delivery; resting every day ends early before delivery. No other settings changed for P16.

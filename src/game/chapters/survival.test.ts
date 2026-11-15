@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { chapters } from './catalog';
 import { chapter5Facts } from '../../data/chapter5/facts';
-import { allFacts, lifeSupport } from '../../facts';
+import { chapter5Data } from '../../data/chapter5/data-screen';
+import { sources } from '../../facts/sources';
+import { allFacts, lifeSupport, radiation } from '../../facts';
 import { food } from '../../facts/food';
 import type { Fact } from '../../facts/types';
 import { equatorBriefing, factText } from '../../data/chapter5/site';
@@ -15,6 +17,249 @@ import { intoTheDark } from '../../data/chapter5/challenges/into-the-dark';
 import { advanceIntoTheDark, isDark, replayToMorning, startIntoTheDark } from '../../rules/chapter5/into-the-dark';
 import { linkEnergyProblem } from '../../rules/chapter5/log';
 import { findTurningPoint } from '../../rules/chapter5/turning-point';
+import { stormArchive, stormArchiveSchema } from '../../data/chapter5/storms';
+import { dailyDose, scheduleAlerts, stormImpact } from '../../rules/chapter5/storms';
+import { advanceStormAlert, prediction, startStormAlert, type Plan } from '../../rules/chapter5/storm-alert';
+import { contactDays } from '../../data/chapter5/challenges/can-you-hear-us';
+import { advanceContact, contactWarning, startContact } from '../../rules/chapter5/can-you-hear-us';
+import { freshFood } from '../../data/chapter5/challenges/fresh-food';
+import { advanceFreshFood, startFreshFood } from '../../rules/chapter5/fresh-food';
+import { iceToAir } from '../../data/chapter5/challenges/ice-to-air';
+import { advanceIceToAir, startIceToAir } from '../../rules/chapter5/ice-to-air';
+import { trainingOrder, initialTrainingProgress, finishChallenge, nextChallenge, bigConnections } from '../../rules/chapter5/training';
+import { bestTrainingChange } from '../../rules/chapter5/training-replay';
+import { alternatives, replayAttempt } from '../../rules/chapter5/what-if';
+
+describe('Fair what-if replay', () => {
+  it('changes only one choice while retaining the same seed and original history', () => {
+    const attempt = { challenge: 'Into the dark' as const, region: 'haworth' as const, choices: [{ action: 'rest', oxygen: 0 }, { action: 'rest', oxygen: 0 }, { action: 'rest', oxygen: 0 }] };
+    const original = replayAttempt(attempt);
+    const changed = replayAttempt(attempt, { day: 2, choice: { action: 'rest', oxygen: 1 } });
+    expect(changed.seed).toBe(original.seed);
+    expect(changed.usedChoices[0]).toEqual(original.usedChoices[0]);
+    expect(changed.usedChoices[2]).toEqual(original.usedChoices[2]);
+    expect(changed.usedChoices[1]).toEqual({ action: 'rest', oxygen: 1 });
+    expect(attempt.choices[1].oxygen).toBe(0);
+    expect(changed.summary.gauges).toHaveLength(3);
+    expect(() => replayAttempt(attempt, { day: 2, choice: { action: 'lab', oxygen: 1 } })).toThrow('exactly one');
+  });
+  it('uses and reports Rest when a later relay-dependent action becomes unavailable', () => {
+    const attempt = { challenge: 'Can you hear us?' as const, region: 'nobile-rim-2' as const, choices: [{ action: 'relay', oxygen: 0 }, { action: 'lab', oxygen: 0 }, { action: 'send', oxygen: 0 }] };
+    const result = replayAttempt(attempt, { day: 1, choice: { action: 'rest', oxygen: 0 } });
+    expect(result.fallbackDays).toEqual([3]);
+    expect(result.usedChoices[2].action).toBe('rest');
+    expect(replayAttempt(attempt, undefined, 3).usedChoices).toEqual(attempt.choices.slice(0, 2));
+    expect(alternatives(attempt, 1)).not.toContainEqual(attempt.choices[0]);
+  });
+  it('reuses the chosen seed and exact space-weather schedule in both runs', () => {
+    const attempt = { challenge: 'Storm alert' as const, region: 'haworth' as const, plan: { sun: 'busy' as const, cargo: 'shelter' as const, region: 'haworth', seed: 987 }, choices: [{ action: 'rest', oxygen: 0 }, { action: 'rest', oxygen: 0 }] };
+    const original = replayAttempt(attempt);
+    const changed = replayAttempt(attempt, { day: 1, choice: { action: 'lab', oxygen: 0 } });
+    expect(changed.seed).toBe(987);
+    expect((changed.state as ReturnType<typeof startStormAlert>).alerts).toEqual((original.state as ReturnType<typeof startStormAlert>).alerts);
+    expect((original.state as ReturnType<typeof startStormAlert>).alerts.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Training progress', () => {
+  it('tracks each challenge in order and finishes after the fifth', () => {
+    let progress = initialTrainingProgress();
+    for (const name of trainingOrder) { expect(nextChallenge(progress)).toBe(name); progress = finishChallenge(progress, name); }
+    expect(progress.finished).toBe(true);
+    expect(nextChallenge(progress)).toBeNull();
+  });
+  it('chooses only connections actually found in the decisions', () => {
+    const base = { challenge: 'Ice to air' as const, day: 1, oxygen: 0, energyUsed: 47, description: 'Split', changes: '', science: 0 };
+    expect(bigConnections([{ ...base, action: 'split' }])).toEqual(['Energy makes oxygen.']);
+    expect(bigConnections([{ ...base, action: 'shelter' }, { ...base, action: 'lab' }])).toEqual(['Science used energy.', 'Sheltering cost a day of science.']);
+  });
+  it('compares a changed choice through challenge replay', () => {
+    const result = bestTrainingChange([{ challenge: 'Into the dark', region: 'haworth', choices: Array.from({ length: 5 }, () => ({ action: 'rest', oxygen: 0 })) }]);
+    expect(result?.challenge).toBe('Into the dark');
+    expect(result?.day).toBe(1);
+    expect(result?.choice.oxygen).toBe(1);
+  });
+});
+
+describe('Ice to air', () => {
+  it('digs extra ice at Haworth and converts water to oxygen using energy', () => {
+    const normal = advanceIceToAir(startIceToAir('nobile-rim-2', 42, []), 'dig');
+    const haworth = advanceIceToAir(startIceToAir('haworth', 42, []), 'dig');
+    expect(normal.ice).toBe(6.6);
+    expect(haworth.ice).toBe(9.9);
+    expect(iceToAir.waterPerBatch).toBe(3.3);
+    expect(iceToAir.energyPerBatch).toBe(47);
+    const split = advanceIceToAir(normal, 'split');
+    expect(split.ice).toBe(3.3);
+    expect(split.air).toBe(4.6);
+    expect(split.energy).toBe(187);
+  });
+  it('completes by digging early and splitting on sunny days', () => {
+    let state = startIceToAir('nobile-rim-2', 42, []);
+    for (const action of ['dig', 'split', 'rest', 'rest', 'split', 'rest'] as const) state = advanceIceToAir(state, action);
+    expect(state.ending).toBe('complete');
+    expect(state.air).toBe(1.2);
+  });
+  it('ends safely without digging and refuses a split without ice', () => {
+    let state = startIceToAir('haworth', 42, []);
+    expect(() => advanceIceToAir(state, 'split')).toThrow('Not enough ice');
+    while (!state.ending) state = advanceIceToAir(state, 'rest');
+    expect(state.ending).toBe('air');
+  });
+  it('applies space-weather walk-back risk on a dig', () => {
+    const alerts = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S4' as const }];
+    expect(advanceIceToAir(startIceToAir('haworth', 42, alerts), 'dig').ending).toBe('space-weather');
+  });
+});
+
+describe('Fresh food', () => {
+  it('calculates food, lamp energy, plant yield and recovered water from facts', () => {
+    const state = advanceFreshFood(startFreshFood(), 'lamps');
+    expect(freshFood.dailyFood).toBe(3.6);
+    expect(freshFood.lampEnergy).toBeCloseTo(15.6);
+    expect(state.freshGrown).toBeCloseTo(0.0312);
+    expect(state.food).toBeCloseTo(settings.foodStartingSupply - freshFood.dailyFood + state.freshGrown);
+    expect(state.energy).toBeCloseTo(206.4);
+    expect(state.water).toBeCloseTo(4.8);
+  });
+  it('delays the cargo and completes the experiment after three lamp days', () => {
+    let state = startFreshFood();
+    for (let day = 1; day <= 6; day++) {
+      state = advanceFreshFood(state, day <= 3 ? 'lamps' : 'rest');
+      if (day === 4) expect(state.message).not.toContain('cargo arrived');
+      if (day === 5) expect(state.message).toContain('cargo arrived');
+    }
+    expect(state).toMatchObject({ ending: 'complete', science: 3, lampDays: 3 });
+    expect(state.freshGrown).toBeLessThan(state.crewAte);
+  });
+  it('ends safely when plants cannot cover the crew food use', () => {
+    const state = advanceFreshFood({ ...startFreshFood(), food: 0 }, 'lamps');
+    expect(state.ending).toBe('food');
+    expect(state.freshGrown).toBeLessThan(freshFood.dailyFood);
+  });
+});
+
+describe('Can you hear us?', () => {
+  it('uses the requested example contact counts per region', () => {
+    expect(contactDays('malapart-massif')).toHaveLength(5);
+    expect(contactDays('nobile-rim-2')).toHaveLength(2);
+    expect(contactDays('haworth')).toHaveLength(4);
+  });
+  it('sends science to Earth and keeps unsent science on the Moon', () => {
+    let sent = startContact('haworth', 42, []);
+    let unsent = startContact('haworth', 42, []);
+    for (let i = 0; i < 5; i++) {
+      sent = advanceContact(sent, 'lab');
+      unsent = advanceContact(unsent, 'lab');
+    }
+    sent = advanceContact(sent, 'send');
+    unsent = advanceContact(unsent, 'rest');
+    expect(sent).toMatchObject({ sent: 5, waiting: 0, ended: true });
+    expect(unsent).toMatchObject({ sent: 0, waiting: 5, ended: true });
+  });
+  it('books one relay for a blocked day and uses it only once', () => {
+    let state = startContact('nobile-rim-2', 42, []);
+    expect(() => advanceContact(state, 'send')).toThrow('No Earth contact');
+    state = advanceContact(state, 'relay');
+    state = advanceContact(state, 'lab');
+    state = advanceContact(state, 'send');
+    expect(state).toMatchObject({ sent: 1, relay: false });
+    expect(() => advanceContact(state, 'send')).toThrow('No Earth contact');
+  });
+  it('delivers warnings only with contact and records an unannounced blocked-day event', () => {
+    const alerts = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S2' as const }];
+    const blocked = startContact('nobile-rim-2', 42, alerts);
+    expect(contactWarning(blocked)).toBe(false);
+    expect(advanceContact(blocked, 'rest').message).toContain('We could not hear Mission Control today.');
+    expect(contactWarning(startContact('haworth', 42, alerts))).toBe(true);
+    const extreme = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S4' as const }];
+    expect(advanceContact(startContact('haworth', 42, extreme), 'rest').ending).toBe('space-weather');
+  });
+});
+
+describe('Storm alert planning and rules', () => {
+  const plan: Plan = { sun: 'quiet', cargo: 'shelter', region: 'haworth', seed: 42 };
+  it('calculates dose predictions from the chosen Sun and sets shelter cargo', () => {
+    expect(prediction(plan)).toEqual({ cosmic: 5.4, maxStorm: 300, limit: 250 });
+    expect(prediction({ ...plan, sun: 'busy' }).cosmic).toBeCloseTo(2.4);
+    expect(startStormAlert(plan).built).toBe(true);
+    expect(startStormAlert({ ...plan, cargo: 'science' }).built).toBe(false);
+  });
+  it('finishes a careful quiet mission deterministically', () => {
+    const play = () => {
+      let state = startStormAlert(plan);
+      for (let day = 1; day <= 6; day++) state = advanceStormAlert(state, day >= 5 ? 1 : 0, 'rest');
+      return state;
+    };
+    expect(play().ending).toBe('Challenge complete!');
+    expect(play()).toEqual(play());
+  });
+  it('ends safely for a simulated S4 moonwalk without shelter', () => {
+    const state = startStormAlert({ ...plan, cargo: 'science' }, [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm', level: 'S4' }]);
+    const result = advanceStormAlert(state, 0, 'moonwalk');
+    expect(result.stormDose).toBe(300);
+    expect(result.ending).toBe('Mission ended early, crew safe.');
+  });
+  it('adds extra science for lab work and protects a built shelter on alert', () => {
+    const alert = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S4' as const }];
+    expect(advanceStormAlert(startStormAlert(plan, alert), 0, 'shelter').stormDose).toBe(150);
+    expect(advanceStormAlert(startStormAlert({ ...plan, cargo: 'science' }), 0, 'lab').science).toBe(2);
+  });
+  it('finishes the busy archive when the crew shelters at each alert', () => {
+    let state = startStormAlert({ ...plan, sun: 'busy' });
+    for (let day = 1; day <= 6; day++) {
+      const warned = state.alerts.some(alert => alert.warningDay === day || alert.arrivalDay === day);
+      state = advanceStormAlert(state, day >= 5 ? 1 : 0, warned ? 'shelter' : 'rest');
+    }
+    expect(state.ending).toBe('Challenge complete!');
+    expect(state.safetyPraise).toBe(true);
+  });
+  it('uses the longer Mons Mouton walk-back estimate', () => {
+    const alerts = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'storm' as const, level: 'S2' as const }];
+    const haworth = advanceStormAlert(startStormAlert(plan, alerts), 0, 'moonwalk');
+    const mouton = advanceStormAlert(startStormAlert({ ...plan, region: 'mons-mouton' }, alerts), 0, 'moonwalk');
+    expect(mouton.stormDose - haworth.stormDose).toBe(2);
+  });
+  it('keeps unknown particle doses visible as an incomplete total', () => {
+    const alerts = [{ flareId: 'fixture', warningDay: 1, arrivalDay: 1, kind: 'unknown' as const, level: null }];
+    const first = advanceStormAlert(startStormAlert(plan, alerts), 0, 'shelter');
+    expect(first.unknownDose).toBe(true);
+    expect(first.lastMessage).toContain('unknown level');
+    expect(advanceStormAlert(first, 0, 'rest').unknownDose).toBe(true);
+  });
+});
+
+describe('Archived solar events and storm rules', () => {
+  it('validates the downloaded archive and preserves unmatched SEP levels', () => {
+    expect(stormArchiveSchema.safeParse(stormArchive).success).toBe(true);
+    const busy = stormArchive.months.find(month => month.month === '2024-05')!;
+    const quiet = stormArchive.months.find(month => month.month === '2019-12')!;
+    expect(busy.flares).toHaveLength(181);
+    expect(busy.seps).toHaveLength(14);
+    expect(busy.seps.filter(sep => sep.level === 'S2')).toHaveLength(2);
+    expect(busy.seps.filter(sep => sep.level === 'unknown')).toHaveLength(12);
+    expect(quiet.flares).toHaveLength(0);
+    expect(quiet.seps).toHaveLength(0);
+    expect(stormArchiveSchema.safeParse({ ...stormArchive, months: [{ ...busy, seps: [] }] }).success).toBe(false);
+  });
+  it('calculates sheltered and exposed doses and the moonwalk return', () => {
+    expect(stormImpact('S4', false, false)).toMatchObject({ dose: 270, ended: true });
+    expect(stormImpact('S4', true, false)).toMatchObject({ dose: 150, ended: false });
+    expect(stormImpact('S4', true, true).dose).toBe(180);
+    expect(stormImpact(null, false, false).dose).toBe(0);
+    expect(() => stormImpact('unknown', false, false)).toThrow('known level');
+    expect(dailyDose('busy')).toBe(0.4);
+    expect(dailyDose('quiet')).toBe(0.9);
+  });
+  it('uses a deterministic seed and retains unknown event classifications', () => {
+    const month = stormArchive.months[0];
+    const schedule = scheduleAlerts(month, 6, 42);
+    expect(schedule).toEqual(scheduleAlerts(month, 6, 42));
+    expect(schedule.some(event => event.kind === 'unknown')).toBe(true);
+    expect(schedule.some(event => event.kind === 'storm' && event.level === 'S2')).toBe(true);
+    expect(schedule.every(event => event.warningDay <= event.arrivalDay && event.arrivalDay - event.warningDay <= 1)).toBe(true);
+  });
+});
 
 it('finds a single oxygen change that helps a fixed no-oxygen challenge', () => {
   let state = startIntoTheDark();
@@ -40,13 +285,14 @@ it('records decisions and links the largest earlier energy costs to a later low-
 });
 
 describe('Into the dark challenge', () => {
-  it('uses a two-day dark example and labels the quiet dose as a training assumption', () => {
+  it('uses a two-day dark example and the catalog quiet-Sun dose estimate', () => {
     expect(intoTheDark.darkDays).toEqual([3, 4]);
     expect(intoTheDark.gauges).toMatchObject({ main: ['energy', 'air'], extra: 'dose', scienceGoal: 5 });
     expect(isDark(3)).toBe(true);
     expect(isDark(4)).toBe(true);
     expect(isDark(2)).toBe(false);
     expect(settings.quietDosePerDay).toBe(0.9);
+    expect(settings.quietDosePerDay).toBe(radiation.doseQuietSun.value);
   });
 
   it('accounts for breathing, oxygen making, solar input, heating, and action cost with reasons', () => {
@@ -56,7 +302,7 @@ describe('Into the dark challenge', () => {
     expect(energy.because).toContain('solar added 50 kWh');
     expect(energy.because).toContain('oxygen making used 14 kWh');
     expect(air.because).toContain('2 astronauts each breathe 0.8 kg');
-    expect(dose.because).toContain('not a sourced Moon dose');
+    expect(dose.because).toContain('catalog\'s quiet-Sun estimate');
     expect(first.lastResult!.scienceBecause).toContain('because');
     const second = advanceIntoTheDark(first, { oxygenKg: 0, action: 'rest' });
     const third = advanceIntoTheDark(second, { oxygenKg: 0, action: 'rest' });
@@ -158,6 +404,11 @@ describe('P4 settings and gauge text', () => {
 });
 
 describe('Survival equator briefing', () => {
+  it('uses a percentage-free sourced Haworth summary for the younger age group', () => {
+    expect(factText('moonPlaces.iceFriendlyGround', '7-9')).not.toContain('%');
+    expect(factText('moonPlaces.iceFriendlyGround', '7-9')).toContain('One study');
+    expect(factText('moonPlaces.iceFriendlyGround', '10-12')).toBe(chapter5Facts['moonPlaces.iceFriendlyGround'].older);
+  });
   it.each(['7-9', '10-12'] as const)('uses the three required facts and %s wording', (age) => {
     const briefing = equatorBriefing(age);
     expect(briefing.map((entry) => entry.id)).toEqual([
@@ -224,5 +475,40 @@ describe('South pole regions', () => {
       expect(initial.chosenRegion).toBeNull();
     }
     expect(initialChapter5State().chosenRegion).toBeNull();
+  });
+});
+
+describe('P16 data and balance', () => {
+  it('includes each chapter fact, resolves and ranks its sources, and lists all settings', () => {
+    const data = chapter5Data();
+    expect(data.facts).toEqual(Object.values(chapter5Facts));
+    const expectedKeys = new Set([...data.facts.flatMap(f => [...f.sources]), ...stormArchive.sourceKeys]);
+    expect(data.sources.map(source => source.key)).toEqual(sources.filter(source => expectedKeys.has(source.key)).map(source => source.key));
+    expect(new Set(data.sources.map(source => source.key)).size).toBe(expectedKeys.size);
+    expect(data.facts.some(fact => fact.id === 'radiation.stormLimit')).toBe(true);
+    expect(data.gameNumbers.map(item => item.name)).toEqual(Object.keys(settings));
+    expect(data.gameNumbers.find(item => item.name === 'extraHeatingPerDarkDay')?.derived).toBe(true);
+  });
+  it('compares a careful and lazy plan for food and communications', () => {
+    let careful = startFreshFood(), lazy = startFreshFood();
+    for (let day = 1; day <= 6; day++) {
+      careful = advanceFreshFood(careful, day <= 3 ? 'lamps' : 'rest');
+      if (!lazy.ending) lazy = advanceFreshFood(lazy, 'rest');
+    }
+    expect(careful).toMatchObject({ ending: 'complete', science: 3 });
+    expect(lazy.ending).toBe('food');
+    let sent = startContact('haworth', settings.stormChallengeSeed, []);
+    let unsent = startContact('haworth', settings.stormChallengeSeed, []);
+    for (let day = 1; day <= 6; day++) {
+      sent = advanceContact(sent, day <= 5 ? 'lab' : 'send');
+      unsent = advanceContact(unsent, 'rest');
+    }
+    expect(sent.sent).toBeGreaterThanOrEqual(settings.scienceGoal);
+    expect(unsent).toMatchObject({ ending: 'complete', sent: 0 });
+  });
+  it('ends the lazy space-weather plan safely when no oxygen is made', () => {
+    let lazy = startStormAlert({ sun: 'quiet', cargo: 'shelter', region: 'haworth', seed: settings.stormChallengeSeed });
+    while (!lazy.ended) lazy = advanceStormAlert(lazy, 0, 'rest');
+    expect(lazy.ending).toContain('flew home');
   });
 });

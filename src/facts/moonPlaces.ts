@@ -173,10 +173,10 @@ export const moonPlaces = {
         value: 3500,
         unit: "metres",
         label: "known",
-        sources: ["SRC-R18-1-10"],
+        sources: ["SRC-R18-1-18"],
         credit: "NASA",
-        young: "🧗 Malpert Massif has a giant cliff about 3,500 metres tall!",
-        older: "Malpert Massif is a huge mountain block, over 5,000 m above its base, with a cliff of about 3,500 metres."
+        young: "🧗 Malpert Massif is a giant Moon mountain. A tall cliff can be seen in the distance!",
+        older: "Malpert Massif rises more than 5,000 metres above its base. A cliff about 3,500 metres tall is visible in the distance."
     },
     iceFriendlyGround: {
         id: "moonPlaces.iceFriendlyGround",
@@ -217,7 +217,7 @@ export const moonPlaces = {
     farSideNotDark: {
         id: "moonPlaces.farSideNotDark",
         label: "known",
-        sources: ["SRC-R04-07", "SRC-R47-47"],
+        sources: ["SRC-R04-07", "SRC-R04-47"],
         credit: "NASA",
         young: "🌗 The \"dark side\" isn't dark! The far side gets just as much sunshine. We just never see it from Earth.",
         older: "The far side gets as much sunlight as the near side. We see only one side because the Moon spins once for each trip around Earth."

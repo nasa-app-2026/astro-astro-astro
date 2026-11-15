@@ -10,6 +10,10 @@ export const equatorBriefingFactIds = [
 /** Before onboarding, use the simpler wording; scientific values never change. */
 export function factText(id: Chapter5FactId, ageRange: AgeRange | null): string {
   const fact = chapter5Facts[id];
+  // Keep the source fact and its label, while avoiding percentages for younger players.
+  if (ageRange !== '10-12' && id === 'moonPlaces.iceFriendlyGround') {
+    return '🔭 One study found Haworth had the most ice-friendly ground of the regions it compared.';
+  }
   return ageRange === '10-12' ? fact.older : fact.young;
 }
 

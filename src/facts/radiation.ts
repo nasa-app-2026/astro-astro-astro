@@ -5,7 +5,7 @@ export const radiation = {
         range: [0.96, 1.24],
         unit: "mSv per day",
         label: "measured",
-        sources: ["SRC-R1SA-08"],
+        sources: ["SRC-R15A-08"],
         credit: "NASA Artemis I radiation detectors (2022)",
         young: "On the way to the Moon, detectors inside the Artemis I capsule soaked up 0.96 to 1.24 mSv of radiation every day.",
         older: "Detectors inside Orion on Artemis I measured 0.96 to 1.24 mSv per day from cosmic rays on the way to and around the Moon."
@@ -15,7 +15,7 @@ export const radiation = {
         value: 0.7,
         unit: "mSv per day",
         label: "measured",
-        sources: ["SRC-R1SA-08"],
+        sources: ["SRC-R15A-08"],
         credit: "NASA Artemis I radiation study",
         young: "On the space station, astronauts get about 0.7 mSv a day. Earth's magnetic field still helps protect them there.",
         older: "The same Artemis I study puts the space station's daily dose at about 0.7 mSv per day of ionizing radiation. ISS astronauts stay inside a magnetic shell that is still partly protected by Earth's magnetic field."
@@ -25,7 +25,7 @@ export const radiation = {
         range: [27, 35],
         unit: "mSv",
         label: "measured",
-        sources: ["SRC-R1SA-08"],
+        sources: ["SRC-R15A-08"],
         credit: "NASA Artemis I radiation study (2022)",
         young: "The whole Artemis I mission (about 25 days), the dose was 27 to 35 mSv, depending on where the detector sat inside Orion.",
         older: "Over the whole Artemis I mission (about 25 days), the dose was 27 to 35 mSv, depending on where the detector sat inside Orion."
@@ -69,7 +69,7 @@ export const radiation = {
         value: 50,
         unit: "%",
         label: "estimate",
-        sources: ["SRC-R17G-06", "SRC-R19-11"],
+        sources: ["SRC-R17G-06", "SRC-R19-1-11"],
         credit: "NASA radiation models",
         young: "Standing on the Moon cuts your radiation by about half (50%) because the Moon itself is a giant shield under your feet!",
         older: "On the surface you get about half (50%) the radiation of open space, because the Moon blocks everything from below. NASA models use exactly half. It is an assumption, not a measurement."
@@ -77,7 +77,7 @@ export const radiation = {
     noSurfaceMeasurement: {
         id: "radiation.noSurfaceMeasurement",
         label: "known",
-        sources: ["SRC-R19-11"],
+        sources: ["SRC-R19-1-11"],
         credit: "NASA",
         young: "No astronaut has yet measured radiation on the Moon's surface yet. Maybe Artemis astronauts will be first!",
         older: "No detector from NASA or its partners has measured radiation on the surface itself yet. Measurements in lunar orbit (LRO, Artemis I) agree with the 'half of open space' rule."
@@ -131,7 +131,7 @@ export const radiation = {
         value: 10,
         unit: "%",
         label: "plan",
-        sources: ["SRC-R19-06"],
+        sources: ["SRC-R19-1-06"],
         credit: "NASA (draft paper)",
         young: "Habitat walls only stop about 10% of cosmic rays, so a moonwalk adds hardly any extra cosmic-ray dose.",
         older: "NASA hopes habitat walls will cut cosmic-ray dose by only about 10% (draft NASA paper). So a moonwalk adds only a tiny bit of extra cosmic-ray dose."
@@ -149,7 +149,7 @@ export const radiation = {
     suitNoStormShield: {
         id: "radiation.suitNoStormShield",
         label: "known",
-        sources: ["SRC-R19-05"],
+        sources: ["SRC-R19-1-05"],
         credit: "NASA",
         young: "A spacesuit can't stop a solar storm. If a storm is coming, moonwalkers must head back inside!",
         older: "Storm shelter is not in a spacesuit, so the real danger comes from being caught out on a moonwalk."
@@ -159,7 +159,7 @@ export const radiation = {
         value: 2,
         unit: "hours",
         label: "rule",
-        sources: ["SRC-R19-05"],
+        sources: ["SRC-R19-1-05"],
         credit: "NASA design guidance",
         young: "When an alarm sounds, moonwalkers should be back behind shielding within about 2 hours.",
         older: "NASA design guidance says real-time alarms give a 'very high level of protection' if the moonwalk ends and the crew is back behind shielding within about 2 hours."
@@ -187,7 +187,7 @@ export const radiation = {
         value: 11,
         unit: "years",
         label: "known",
-        sources: ["SRC-R19-01", "SRC-R19-1-04"],
+        sources: ["SRC-R19-1-01", "SRC-R19-1-04"],
         credit: "NASA and NOAA",
         young: "The Sun has busy and quiet years, in a cycle that lasts about 11 years!",
         older: "The Sun goes through busy and quiet years in a cycle of about 11 years."
