@@ -33,3 +33,6 @@
 .survival-challenge-sources .survival-region-fact{display:inline-block;vertical-align:top;max-width:240px;margin-right:24px}
 .survival-challenge-sources .survival-region-fact p{font-size:14px}
 @media(max-width:700px){.survival-challenge-layout{grid-template-columns:1fr}}
+.survival-panel .survival-log-button{position:fixed;right:20px;bottom:20px;width:auto;z-index:2;margin:0;padding:12px 18px}
+.survival-log{position:fixed;right:20px;bottom:85px;z-index:2;max-height:50vh;overflow:auto;width:min(460px,calc(100vw - 40px));padding:18px;background:#102840;border:2px solid #9efaf0;border-radius:12px}
+.survival-log[hidden]{display:none}

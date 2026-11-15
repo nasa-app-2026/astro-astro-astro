@@ -36,6 +36,26 @@ test('Survival loads its fact adapter and returns to the directory', async ({ pa
 });
 
 for (const age of ['7-9', '10-12'] as const) {
+  test(`decision log opens and closes without changing the challenge for ${age}`, async ({ page }) => {
+    await enterDirectory(page, age);
+    await page.locator('[data-chapter="survival"]').click();
+    await page.getByRole('button', { name: 'Near the south pole', exact: true }).click();
+    await page.getByRole('button', { name: 'Choose Haworth', exact: true }).click();
+    await page.getByRole('button', { name: 'Begin Into the dark' }).click();
+    await page.locator('[data-action="lab"]').click();
+    const sidebar = page.getByRole('complementary', { name: 'Challenge resources' });
+    const before = await sidebar.innerText();
+    const button = page.getByRole('button', { name: '💡 Log' });
+    await button.click();
+    const log = page.getByRole('region', { name: 'Decision log' });
+    await expect(log).toContainText('Day 1');
+    await expect(log).toContainText('Lab science');
+    if (age === '10-12') await expect(log).toContainText('15 kWh');
+    await button.click();
+    await expect(log).toBeHidden();
+    expect(await sidebar.innerText()).toBe(before);
+    await expect(page.getByRole('heading', { name: 'Day 1 results' })).toBeVisible();
+  });
   test(`Into the dark plays six days and reaches the debrief for age ${age}`, async ({ page }) => {
     await enterDirectory(page, age);
     await page.locator('[data-chapter="survival"]').click();

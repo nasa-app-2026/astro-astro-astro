@@ -13,6 +13,20 @@ import { gaugeModel } from '../../rules/chapter5/gauges';
 import type { ResourceId } from '../../data/chapter5/gauges';
 import { intoTheDark } from '../../data/chapter5/challenges/into-the-dark';
 import { advanceIntoTheDark, isDark, replayToMorning, startIntoTheDark } from '../../rules/chapter5/into-the-dark';
+import { linkEnergyProblem } from '../../rules/chapter5/log';
+
+it('records decisions and links the largest earlier energy costs to a later low-energy day', () => {
+  let state = startIntoTheDark();
+  state = advanceIntoTheDark(state, { oxygenKg: 2, action: 'lab' });
+  state = advanceIntoTheDark(state, { oxygenKg: 0, action: 'rest' });
+  state = advanceIntoTheDark(state, { oxygenKg: 0, action: 'lab' });
+  expect(state.log[0]).toMatchObject({ day: 1, actionEnergy: 15, oxygenEnergy: 28, decision: { oxygenKg: 2, action: 'lab' } });
+  expect(state.log[0].changes).toHaveLength(3);
+  const linked = linkEnergyProblem(state.log, 3);
+  expect(linked[0].links).toContainEqual({ day: 3, resource: 'energy' });
+  expect(linked[1].links).toEqual([]);
+  expect(state.log[0].links).toEqual([]);
+});
 
 describe('Into the dark challenge', () => {
   it('uses a two-day dark example and labels the quiet dose as a training assumption', () => {

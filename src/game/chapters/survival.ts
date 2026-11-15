@@ -9,6 +9,7 @@ import { LABEL_WORDS } from '../../facts/types';
 import { intoTheDark } from '../../data/chapter5/challenges/into-the-dark';
 import { advanceIntoTheDark, isDark, replayToMorning, startIntoTheDark } from '../../rules/chapter5/into-the-dark';
 import { renderSidebar } from './survival/sidebar';
+import type { DecisionLogEntry } from '../../rules/chapter5/log';
 import './survival/site.css';
 
 export class SurvivalScene extends ChapterScene {
@@ -62,8 +63,10 @@ export class SurvivalScene extends ChapterScene {
       item.append(label, text, sources);
       return item;
     };
+    let chapterLog: readonly DecisionLogEntry[] = [];
     const showIntoTheDark = () => {
       let challengeState = startIntoTheDark();
+      const previousLog = chapterLog;
       const render = (showResult = false) => {
         heading(intoTheDark.title);
         const layout = document.createElement('div');
@@ -118,7 +121,7 @@ export class SurvivalScene extends ChapterScene {
               const retry = document.createElement('button');
               retry.type = 'button';
               retry.textContent = `Try again from day ${result.day}`;
-              retry.addEventListener('click', () => { challengeState = replayToMorning(challengeState.history, result.day); render(); });
+              retry.addEventListener('click', () => { challengeState = replayToMorning(challengeState.history, result.day); chapterLog = [...previousLog, ...challengeState.log]; render(); });
               content.append(retry);
               const onward = document.createElement('button');
               onward.type = 'button';
@@ -164,6 +167,7 @@ export class SurvivalScene extends ChapterScene {
             choice.dataset.action = action.id;
             choice.addEventListener('click', () => {
               challengeState = advanceIntoTheDark(challengeState, { oxygenKg: Number(oxygen.value), action: action.id });
+              chapterLog = [...previousLog, ...challengeState.log];
               render(true);
             });
             content.append(choice);
@@ -171,6 +175,39 @@ export class SurvivalScene extends ChapterScene {
         }
         layout.append(sidebarHost, content);
         panel.append(layout);
+        const logButton = document.createElement('button');
+        logButton.type = 'button';
+        logButton.className = 'survival-log-button';
+        logButton.textContent = '💡 Log';
+        logButton.setAttribute('aria-expanded', 'false');
+        const logPanel = document.createElement('section');
+        logPanel.className = 'survival-log';
+        logPanel.setAttribute('aria-label', 'Decision log');
+        logPanel.hidden = true;
+        const logTitle = document.createElement('h2');
+        logTitle.textContent = 'Decision log';
+        logPanel.append(logTitle);
+        const list = document.createElement('ol');
+        const older = getPlayerProfile().ageRange === '10-12';
+        for (const entry of [...chapterLog].reverse()) {
+          const line = document.createElement('li');
+          const links = entry.links.map(link => ` ↳ Day ${link.day}: low energy`).join('');
+          line.textContent = older
+            ? `${entry.challenge} · Day ${entry.day} 🧪 ${entry.actionName} +${entry.science} science ↳ 🔋 ${entry.actionEnergy} kWh; 🫁 +${entry.decision.oxygenKg} kg ↳ ⚡ ${entry.oxygenEnergy} kWh because the action and oxygen machine use energy.${links}`
+            : `Day ${entry.day} 🧪 ${entry.actionName} ↳ ⚡ 🫁. Your choices used energy.${links}`;
+          list.append(line);
+        }
+        if (!chapterLog.length) {
+          const empty = document.createElement('p');
+          empty.textContent = 'Your decisions will appear here.';
+          logPanel.append(empty);
+        }
+        logPanel.append(list);
+        logButton.addEventListener('click', () => {
+          logPanel.hidden = !logPanel.hidden;
+          logButton.setAttribute('aria-expanded', String(!logPanel.hidden));
+        });
+        panel.append(logButton, logPanel);
         const sources = document.createElement('div');
         sources.className = 'survival-challenge-sources';
         sources.append(factElement('lifeSupport.oxygenPerDay'), factElement('lifeSupport.oxygenEnergyModel'), factElement('power.emptyBaseHeating'), factElement('power.darkSpells'));

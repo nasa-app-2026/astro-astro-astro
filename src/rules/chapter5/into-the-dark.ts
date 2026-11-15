@@ -1,6 +1,7 @@
 import { lifeSupport } from '../../facts/lifeSupport';
 import { intoTheDark } from '../../data/chapter5/challenges/into-the-dark';
 import { settings } from '../../data/chapter5/settings';
+import { linkEnergyProblem, type DecisionLogEntry } from './log';
 
 export type ActionId = typeof intoTheDark.actions[number]['id'];
 export type DayDecision = Readonly<{ oxygenKg: number; action: ActionId }>;
@@ -8,12 +9,12 @@ export type DayRecord = Readonly<{ day: number; decision: DayDecision }>;
 export type Ending = 'air' | 'energy' | 'complete';
 export type GaugeChange = Readonly<{ gauge: 'energy' | 'air' | 'dose'; before: number; after: number; because: string }>;
 export type DayResult = Readonly<{ day: number; changes: readonly GaugeChange[]; scienceChange: number; scienceBecause: string; ending: Ending | null; endingBecause: string | null }>;
-export type DarkState = Readonly<{ day: number; energy: number; air: number; dose: number; science: number; history: readonly DayRecord[]; ending: Ending | null; lastResult: DayResult | null }>;
+export type DarkState = Readonly<{ day: number; energy: number; air: number; dose: number; science: number; history: readonly DayRecord[]; log: readonly DecisionLogEntry[]; ending: Ending | null; lastResult: DayResult | null }>;
 
 export const isDark = (day: number): boolean => intoTheDark.darkDays.includes(day as 3 | 4);
 
 export function startIntoTheDark(): DarkState {
-  return { day: 1, energy: intoTheDark.startingEnergy, air: intoTheDark.startingAir, dose: 0, science: 0, history: [], ending: null, lastResult: null };
+  return { day: 1, energy: intoTheDark.startingEnergy, air: intoTheDark.startingAir, dose: 0, science: 0, history: [], log: [], ending: null, lastResult: null };
 }
 
 export function advanceIntoTheDark(state: DarkState, decision: DayDecision): DarkState {
@@ -51,7 +52,10 @@ export function advanceIntoTheDark(state: DarkState, decision: DayDecision): Dar
     ending,
     endingBecause,
   };
-  return { day: state.day + 1, energy, air, dose, science, history: [...state.history, { day: state.day, decision }], ending, lastResult: result };
+  const entry: DecisionLogEntry = { challenge: intoTheDark.title, day: state.day, decision, changes: result.changes, science: action.science, actionName: action.title, actionEnergy: action.energy, oxygenEnergy, links: [] };
+  const entries = [...state.log, entry];
+  const log = energy <= intoTheDark.startingEnergy * settings.gaugeLowFraction ? linkEnergyProblem(entries, state.day) : entries;
+  return { day: state.day + 1, energy, air, dose, science, history: [...state.history, { day: state.day, decision }], log, ending, lastResult: result };
 }
 
 export function replayToMorning(history: readonly DayRecord[], morning: number): DarkState {
